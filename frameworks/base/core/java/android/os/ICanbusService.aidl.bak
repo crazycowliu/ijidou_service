@@ -2,6 +2,7 @@ package android.os;
 
 interface ICanbusService {
 	
+	
 	/*** ComId: 0x72, Canbus -> Host,   data length = 0x0E: Car Basic Info 					***/
 	/*** ComId: 0x73, Canbus -> Host,   data length = 0x08: AC info 						***/
 	/*** ComId: 0x12, Canbus -> Host, 	data length = 0x0A: Car Info 1 						***/
@@ -19,9 +20,24 @@ interface ICanbusService {
 	
 	/*** ComId: 0x72, Canbus -> Host,   data length = 0x0E: Car Basic Info 					***/
 	
-	//EffectiveInfo getEffectiveInfo();
-	
+	//ActiveInfo getActiveInfo();
+	//will be removed
 	boolean getBluetooth();
+	
+	boolean isActiveBluetooth();
+	
+	//LR or FB radar ?
+	boolean isActiveRadar();
+	
+	boolean isActiveKeyIn();
+	
+	boolean isActivePark();
+	
+	boolean isActiveRev();
+	
+	boolean isActiveILL();
+	
+	boolean isActiveACC();
 	
 	/**
 	 * limit too 256 km/h ?
@@ -30,16 +46,16 @@ interface ICanbusService {
 	
 	char getWheelKey();
 	
-	/**
-	 * positive, turn left, counter-clock-wise
-	 * negative, turn right, 	    clock-wise
-	 */
-	char getwheelAngle();
+	char getLight();
+	
+	char getWheelLeftAngle();
+	
+	char getWheelRightAngle();
 	
 	/**
-	 * FB-Radar
+	 * Front-Back-Radar
 	 */
-	char getRadar(char direction);
+	char getRadar(char raderDirection);
 	
 	/*** ComId: 0x73, Canbus -> Host,   data length = 0x08: AC info 						***/
 }

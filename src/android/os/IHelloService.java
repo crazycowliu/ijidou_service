@@ -63,6 +63,21 @@ reply.writeNoException();
 reply.writeInt(_result);
 return true;
 }
+case TRANSACTION_greet:
+{
+data.enforceInterface(DESCRIPTOR);
+android.os.Person _arg0;
+if ((0!=data.readInt())) {
+_arg0 = android.os.Person.CREATOR.createFromParcel(data);
+}
+else {
+_arg0 = null;
+}
+java.lang.String _result = this.greet(_arg0);
+reply.writeNoException();
+reply.writeString(_result);
+return true;
+}
 }
 return super.onTransact(code, data, reply, flags);
 }
@@ -115,10 +130,36 @@ _data.recycle();
 }
 return _result;
 }
+@Override public java.lang.String greet(android.os.Person person) throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+java.lang.String _result;
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+if ((person!=null)) {
+_data.writeInt(1);
+person.writeToParcel(_data, 0);
+}
+else {
+_data.writeInt(0);
+}
+mRemote.transact(Stub.TRANSACTION_greet, _data, _reply, 0);
+_reply.readException();
+_result = _reply.readString();
+}
+finally {
+_reply.recycle();
+_data.recycle();
+}
+return _result;
+}
 }
 static final int TRANSACTION_setVal = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
 static final int TRANSACTION_getVal = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+static final int TRANSACTION_greet = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
 }
 public void setVal(int val, char num) throws android.os.RemoteException;
 public int getVal(char num) throws android.os.RemoteException;
+public java.lang.String greet(android.os.Person person) throws android.os.RemoteException;
 }

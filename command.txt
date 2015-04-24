@@ -1,0 +1,80 @@
+mmm -B packages/apps/Hello/
+
+
+./makeQucii -t Alto4NA mm -B hardware/libhardware/modules/hello/
+
+./makeQucii -t Alto4NA mm -B frameworks/base/
+
+./makeQucii -t Alto4NA mm -B frameworks/base/services/jni
+
+./makeQucii -t Alto4NA mm -B external/canbus
+
+./makeQucii -t Alto4NA snod
+
+./CopyImg.sh Alto4NA
+
+tar cvf Qucii_8939_44.tar Qucii_8939_44
+
+gzip Qucii_8939_44.tar
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\jni\com_android_server_HelloService.cpp		/home/liufeng/repo/frameworks/base/services/jni
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\jni\com_android_server_CanbusService.cpp		/home/liufeng/repo/frameworks/base/services/jni
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\jni\onload.cpp								/home/liufeng/repo/frameworks/base/services/jni
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\jni\Android.mk								/home/liufeng/repo/frameworks/base/services/jni
+    com_android_server_HelloService.cpp \
+    com_android_server_CanbusService.cpp \
+    
+./makeQucii -t Alto4NA mm -B frameworks/base/services/jni												out/target/product/Alto4NA/system/lib/libandroid_servers.so
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\os\IHelloService.aidl			/home/liufeng/repo/frameworks/base/core/java/android/os
+D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\os\ICanbusService.aidl			/home/liufeng/repo/frameworks/base/core/java/android/os
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\Android.mk										/home/liufeng/repo/frameworks/base
+	core/java/android/os/IHelloService.aidl \
+	core/java/android/os/ICanbusService.aidl \
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\java\com\android\server\HelloService.java	/home/liufeng/repo/frameworks/base/services/java/com/android/server
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\java\com\android\server\CanbusService.java	/home/liufeng/repo/frameworks/base/services/java/com/android/server
+D:\workspace\SourceTree\jidou_service\frameworks\base\services\java\com\android\server\SystemServer.java	/home/liufeng/repo/frameworks/base/services/java/com/android/server
+
+./makeQucii -t Alto4NA mm -B frameworks/base/services/java
+
+
+D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\app\ContextImpl.java				/home/liufeng/repo/frameworks/base/core/java/android/app
+
+./makeQucii -t Alto4NA mm -B frameworks/base/			/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework_intermediates
+														/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework2_intermediates/classes
+														/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework-base_intermediates/classes/android
+														
+
+D:\workspace\SourceTree\jidou_service\external\canbus\canbus_thread.c	/home/liufeng/repo/external/canbus
+
+D:\workspace\eclipse\hello\src\cn\crazycow\android\HelloActivity.java	/home/liufeng/repo/out/target/product/Alto4NA/system/app
+
+		framework-base_intermediates/classes/android
+		 out/target/common/obj/JAVA_LIBRARIES/ext_intermediates
+Install: out/target/product/Alto4NA/system/framework/framework2.jar
+Install: out/target/product/Alto4NA/system/framework/framework.jar
+		 out/target/product/Alto4NA/system/framework/services.jar
+		 out/target/product/Alto4NA/system/lib/libandroid_servers.so
+		 
+		 
+adb remount
+adb shell
+chmod 777 system
+
+adb push C:\Users\liufeng\Desktop\framework.jar 		/system/framework/
+adb push C:\Users\liufeng\Desktop\framework2.jar 		/system/framework/
+adb push C:\Users\liufeng\Desktop\ext.jar 				/system/framework/
+adb push C:\Users\liufeng\Desktop\libandroid_servers.so /system/lib
+
+adb push C:\Users\liufeng\Desktop\cabbus 				/system/bin
+
+adb install C:\Users\liufeng\Desktop\hello.apk
+
+adb reboot
+
+
+
+

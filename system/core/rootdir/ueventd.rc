@@ -12,6 +12,8 @@
 /dev/ttyS1                0666   root       root
 /dev/ttyS2                0666   root       root
 /dev/ttyS3                0666   root       root
+/dev/ttyHSL0              0666   root       root
+/dev/ttyHSL1              0666   root       root
 
 # Anyone can read the logs, but if they're not in the "logs"
 # group, then they'll only see log entries for their UID.

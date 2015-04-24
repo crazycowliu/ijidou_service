@@ -50,6 +50,14 @@ reply.writeNoException();
 reply.writeInt(((_result)?(1):(0)));
 return true;
 }
+case TRANSACTION_isActiveBluetooth:
+{
+data.enforceInterface(DESCRIPTOR);
+boolean _result = this.isActiveBluetooth();
+reply.writeNoException();
+reply.writeInt(((_result)?(1):(0)));
+return true;
+}
 }
 return super.onTransact(code, data, reply, flags);
 }
@@ -85,8 +93,27 @@ _data.recycle();
 }
 return _result;
 }
+@Override public boolean isActiveBluetooth() throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+boolean _result;
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+mRemote.transact(Stub.TRANSACTION_isActiveBluetooth, _data, _reply, 0);
+_reply.readException();
+_result = (0!=_reply.readInt());
+}
+finally {
+_reply.recycle();
+_data.recycle();
+}
+return _result;
+}
 }
 static final int TRANSACTION_getBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+static final int TRANSACTION_isActiveBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
 }
 public boolean getBluetooth() throws android.os.RemoteException;
+public boolean isActiveBluetooth() throws android.os.RemoteException;
 }
