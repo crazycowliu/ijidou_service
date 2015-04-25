@@ -1,9 +1,20 @@
-#define LOG_TAG "CanbusService3"
+#define LOG_TAG "CanbusService10"
+#define LOG_NDEBUG 0
+//only used when build entire android source code
+//#include <cutils/Log.h>
+//if you build with ndk or mm/mmm, use android/log.h
+//#include <cutils/Log.h>
+//#include <utils/Log.h>
+
+#include <android/log.h>
+#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define LOGF(...)  fprintf(fd_log, __VA_ARGS__)
+
 #include "jni.h"
 #include "JNIHelp.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <utils/misc.h>
-#include <utils/Log.h>
+
 /**
  * NO HAL
 #include <hardware/hardware.h>
@@ -19,7 +30,6 @@
 #include <termio.h>
 
 #include <pthread.h>
-
 
 //#define DEVICE_NAME "/dev/canbus"
 #define DEVICE_NAME "/dev/ttyHSL1"
@@ -41,25 +51,46 @@ char ACC		= 0x01;
 
 namespace android
 {
-  int fd;
-  pthread_t read_t;
+
+  pthread_t canbus_read_t;
   char active_info;
+
   int setup_port(int fd, int baud, int databits, int parity, int stopbits);
+  int setup_port2(int fd, char *device_name);
 
   void *read_canbus(void *arg) {
 
+	int fd;
+	FILE *fd_log;
+
   	char device_name[] = "/dev/ttyHSL1";
-  	ALOGE("child thread start..\n");
-  	fflush(stderr);
+//  	char device_name[] = "/data/user/abc";
+
+  	fd_log = fopen("/data/user/out_jjww", "w");
+  	if (fd_log == NULL) {
+  	   return NULL;
+  	}
+
+
+  	fprintf(fd_log, "CanbusService10 child thread start..\n");
+  	fflush(fd_log);
+  	LOGE("child thread start..\n");
+
 
   	 if ((fd = open(device_name, O_RDWR)) == -1) {
-  		  ALOGE("Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
-  	      return NULL;
+  		fprintf(fd_log, "Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
+  		  		fflush(fd_log);
+  		 LOGF("Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
+
+  	    return NULL;
   	 }
 
-  	ALOGE("open file ok ..\n");
+  	fprintf(fd_log, "open file ok ..\n");
+  	fflush(fd_log);
+  	LOGE("open file ok ..\n");
 
-  	setup_port(fd, 115200, 8, 0, 1);
+//  	setup_port(fd, 115200, 8, 0, 1);
+  	setup_port2(fd, device_name);
 
   	 char buf[1024];
   	 int len = 1024;
@@ -67,19 +98,31 @@ namespace android
   	 int i;
 
      while (1) {
-  	   ALOGE("read_canbus: reading ..\n");
-  	   count = read(fd, buf, 1024);
-  	   ALOGE("read_canbus: Read %d from %s\n", count, device_name);
+    	 fprintf(fd_log, "read_canbus: reading ..\n");
+    	 fflush(fd_log);
+        LOGE("read_canbus: reading ..\n");
+
+  	    count = read(fd, buf, 32);
+  	    fprintf(fd_log, "read_canbus: Read %d from %s\n", count, device_name);
+  	    fflush(fd_log);
+  	    LOGE("read_canbus: Read %d from %s\n", count, device_name);
+
   		for (i = 0; i < count; i++) {
-  			ALOGE("%X ", buf[i] & 0x000000FF);
+  			fprintf(fd_log, "%X ", buf[i] & 0x000000FF);
+  			fflush(fd_log);
+  			LOGE("%X ", buf[i] & 0x000000FF);
   		}
-  		ALOGE("\n");
+  		fprintf(fd_log, "\n");
+  		fflush(fd_log);
+  		LOGE("\n");
 
   		int com_id = buf[3];
 
   		switch (com_id) {
   			case 0x72:
   				active_info = buf[4];
+  		  	    fprintf(fd_log, "Recevie: 0x72\n");
+  		  	    fflush(fd_log);
   				break;
   			case 0x73:
   				break;
@@ -90,23 +133,26 @@ namespace android
 
       close(fd);
 
+      fclose(fd_log);
+
       return NULL;
   }
 
   void close() {
-//	  pthread_join(read_t, NULL);
+//	  pthread_join(canbus_read_t, NULL);
   }
 
   //TODO: ioctl
   static jboolean canbus_init(JNIEnv *env, jclass clazz) {
 
-	  	ALOGE("stderr canbus_init  ..\n");
-	  	ALOGE("ALOGE canbus_init...!\n");
+	  	LOGE("stderr canbus_init  ..\n");
+	  	LOGE("LOGE canbus_init...!\n");
 	  	int ret = 0;
 
-	    ret = pthread_create(&read_t, NULL, read_canbus, NULL);
+	    ret = pthread_create(&canbus_read_t, NULL, read_canbus, NULL);
+//	  	read_canbus(NULL);
 	    if (ret != 0){
-	        ALOGE("Creat pthread error!\n");
+	        LOGE("Creat pthread error!\n");
 	        exit(-EINVAL);
 	    }
 
@@ -116,12 +162,7 @@ namespace android
   static jboolean canbus_get_bluetooth(JNIEnv *env, jobject clazz){
     int val = 0;
 
-    if (fd == -1) {
-      ALOGI("Canbus JNI: device is not open.");
-      return 0;
-    }
-
-    ALOGE("Canbus JNI native active_info=%d", active_info);
+    LOGE("Canbus JNI native active_info=%d", active_info);
     return (active_info & BLUETOOTH);
   }
 
@@ -140,7 +181,7 @@ namespace android
   	/* Get current setting */
 
   	if (ioctl(fd, TCGETA, &term_attr) < 0) {
-  		ALOGE("ioctl(fd, TCGETA, &term_attr\n");
+  		LOGE("ioctl(fd, TCGETA, &term_attr\n");
   		return -1;
   	}
 
@@ -241,19 +282,77 @@ namespace android
   	term_attr.c_cc[VTIME] = 0;
 
   	if (ioctl(fd, TCSETAW, &term_attr) < 0) {
-  		ALOGE("ioctl(fd, TCSETAW, &term_attr) < 0\n");
+  		LOGE("ioctl(fd, TCSETAW, &term_attr) < 0\n");
   		return -1;
 
   	}
 
   	if (ioctl(fd, TCFLSH, 2) < 0) {
-  		ALOGE("ioctl(fd, TCFLSH, 2) < 0\n");
+  		LOGE("ioctl(fd, TCFLSH, 2) < 0\n");
   		return -1;
 
   	}
 
   	return 0;
 
+  }
+
+  int setup_port2(int fd, char *device_name) {
+
+  	struct termios config;
+
+  	if(!isatty(fd)) {
+  	  fprintf(stderr, "Not a tty %s -- %s", device_name, strerror(errno));
+  	  return -1;
+  	}
+
+  	if(tcgetattr(fd, &config) < 0) {
+  		fprintf(stderr, "Can not get config %s -- %s", device_name, strerror(errno));
+  		return -1;
+  	}
+
+  	//Input flags - Turn off input processing
+  //	config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL |
+  //	                     INLCR | PARMRK | INPCK | ISTRIP | IXON);
+  	config.c_iflag = 0;
+
+  	//Output flags - Turn off output processing
+  	config.c_oflag = 0;
+
+  	//local mode flag
+  	//No line processing
+  //	config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+  	config.c_lflag = 0;
+
+  	//#define CSIZE 0000060  	// byte with mask
+  	//#define CSTOPB 0000100	//2 stop bits
+
+  	//#define CPARENB 0000400  // 开启输出时产生奇偶位、输入时进行奇偶校验。
+  	//#define CPARODD 0001000  // 输入/输入校验是奇校验。
+
+  	//#define PARENB CPARENB  // 开启输出时产生奇偶位、输入时进行奇偶校验。
+  	//#define PARODD CPARODD  // 输入/输入校验是奇校验。
+
+  //	config.c_cflag &= ~CSIZE;	//no "byte with mask"
+
+  	config.c_cflag &= ~PARENB;	//no parity
+  	config.c_cflag &= ~CSTOPB;	//1bit stop
+  	config.c_cflag |= CS8;		//8bits data
+
+  //	config.c_cc[VMIN]  = 1;
+  //	config.c_cc[VTIME] = 0;
+
+  	 if(cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
+  		 fprintf(stderr, "Failed  cfsetispeed %s -- %s", device_name, strerror(errno));
+  		 return -1;
+  	 }
+
+  	 if(tcsetattr(fd, TCSAFLUSH, &config) < 0) {
+  		 fprintf(stderr, "Failed  tcsetattr %s -- %s", device_name, strerror(errno));
+  		 return -1;
+  	 }
+
+  	 return 0;
   }
 
 /*
@@ -279,7 +378,7 @@ Array
 	*/
 
   static const JNINativeMethod method_table[] = {
-	{"init", 				"()Z", (void *)canbus_init},
+	{"canbus_init1",		"()Z", (void *)canbus_init},
     {"get_bluetooth", 		"()Z", (void *)canbus_get_bluetooth},
 	{"is_active_bluetooth", "()Z", (void *)canbus_is_active_bluetooth},
   };

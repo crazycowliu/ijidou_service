@@ -18,15 +18,10 @@
 //NOTE: do not align
 typedef struct struct_message {
 	unsigned char sof1;
-
 	unsigned char sof2;
-
 	unsigned char length;	//length of data
-
 	unsigned char comID;
-
 	unsigned char data[256];
-
 	unsigned char checksum;	//(length + comID + data[0] + ... + data[length - 1]) & 0xFF - 1
 
 } str_msg;
@@ -58,6 +53,8 @@ void *read_canbus(void *arg);
 int speed_to_flag(int speed);
 
 int setup_port(int fd, int baud, int databits, int parity, int stopbits);
+int setup_port2(int fd, char *device_name);
+int wiki(int argc,char** argv);
 
 int main(int argc, char **argv) {
 
@@ -79,19 +76,21 @@ int main(int argc, char **argv) {
 	    }
 
 	    pthread_join(read_t, NULL);
+	} else if(!strcmp(argv[2], "wiki")){
+		wiki(argc, argv);
 	}
 
 	fprintf(stderr, "Main thread finished!\n");
-
 
 	return 0;
 }
 
 void read_msg (char *device_name) {
+
 	int fd;
 	int i;
 
-	if ((fd = open(device_name, O_RDWR)) == -1) {
+	if ((fd = open(device_name, O_RDWR | O_NOCTTY)) == -1) {
 	  fprintf(stderr, "Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
 	  return ;
 	}
@@ -102,7 +101,7 @@ void read_msg (char *device_name) {
 	int count = 0;
 	while ((count = read(fd, buf_p, len)) != -1) {
 
-		printf("Read %d from /dev/ttyS2\n", count);
+		printf("Read %d from %s\n", count, device_name);
 		for (i = 0; i < count; i++) {
 			printf("%X ", buf_p[i] & 0x000000FF);
 		}
@@ -207,9 +206,12 @@ void *read_canbus(void *arg) {
 
 	fprintf(stderr, "open file ok ..\n");
 
-	setup_port(fd, 115200, 8, 0, 1);
+//	setup_port(fd, 115200, 8, 0, 1);
+	int rc = setup_port2(fd, device_name);
 
-	 //TODO: ioctl to set brand rate
+	if (rc != 0) {
+		fprintf(stderr, "setup_port2 failed %s -- %s", device_name, strerror(errno));
+	}
 
 	 char buf[1024];
 	 int len = 1024;
@@ -219,7 +221,7 @@ void *read_canbus(void *arg) {
    while (1) {
 	   fprintf(stderr, "reading ..\n");
 	   count = read(fd, buf, 1024);
-	   fprintf(stderr, "Read %d from %s\n", count, DEVICE_NAME);
+	   fprintf(stderr, "Read %d from %s\n", count, device_name);
 		for (i = 0; i < count; i++) {
 			fprintf(stderr, "%X ", buf[i] & 0x000000FF);
 		}
@@ -260,11 +262,8 @@ int setup_port(int fd, int baud, int databits, int parity, int stopbits)
 //	memcpy(&oterm_attr, &term_attr, sizeof(struct termio));
 
 	term_attr.c_iflag &= ~(INLCR | IGNCR | ICRNL | ISTRIP);
-
 	term_attr.c_oflag &= ~(OPOST | ONLCR | OCRNL);
-
 	term_attr.c_lflag &= ~(ISIG | ECHO | ICANON | NOFLSH);
-
 	term_attr.c_cflag &= ~CBAUD;
 
 //	term_attr.c_cflag |= CREAD | speed_to_flag(baud);
@@ -276,33 +275,19 @@ int setup_port(int fd, int baud, int databits, int parity, int stopbits)
 	term_attr.c_cflag &= ~(CSIZE);
 
 	switch (databits) {
-
 	case 5:
-
 		term_attr.c_cflag |= CS5;
-
 		break;
-
 	case 6:
-
 		term_attr.c_cflag |= CS6;
-
 		break;
-
 	case 7:
-
 		term_attr.c_cflag |= CS7;
-
 		break;
-
 	case 8:
-
 	default:
-
 		term_attr.c_cflag |= CS8;
-
 		break;
-
 	}
 
 	/* Set parity */
@@ -310,51 +295,33 @@ int setup_port(int fd, int baud, int databits, int parity, int stopbits)
 	switch (parity) {
 
 	case 1: /* Odd parity */
-
 		term_attr.c_cflag |= (PARENB | PARODD);
-
 		break;
-
 	case 2: /* Even parity */
-
 		term_attr.c_cflag |= PARENB;
-
 		term_attr.c_cflag &= ~(PARODD);
-
 		break;
-
 	case 0: /* None parity */
-
 	default:
-
 		term_attr.c_cflag &= ~(PARENB);
-
 		break;
-
 	}
 
 	/* Set stopbits */
 
 	switch (stopbits) {
+	//#define CSTOPB 0000100
 
 	case 2: /* 2 stopbits */
-
 		term_attr.c_cflag |= CSTOPB;
-
 		break;
-
 	case 1: /* 1 stopbits */
-
 	default:
-
 		term_attr.c_cflag &= ~CSTOPB;
-
 		break;
-
 	}
 
 	term_attr.c_cc[VMIN] = 1;
-
 	term_attr.c_cc[VTIME] = 0;
 
 	if (ioctl(fd, TCSETAW, &term_attr) < 0) {
@@ -373,9 +340,66 @@ int setup_port(int fd, int baud, int databits, int parity, int stopbits)
 
 }
 
+int setup_port2(int fd, char *device_name) {
+
+	struct termios config;
+
+	if(!isatty(fd)) {
+	  fprintf(stderr, "Not a tty %s -- %s", device_name, strerror(errno));
+	  return -1;
+	}
+
+	if(tcgetattr(fd, &config) < 0) {
+		fprintf(stderr, "Can not get config %s -- %s", device_name, strerror(errno));
+		return -1;
+	}
+
+	//Input flags - Turn off input processing
+//	config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL |
+//	                     INLCR | PARMRK | INPCK | ISTRIP | IXON);
+	config.c_iflag = 0;
+
+	//Output flags - Turn off output processing
+	config.c_oflag = 0;
+
+	//local mode flag
+	//No line processing
+//	config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+	config.c_lflag = 0;
+
+	//#define CSIZE 0000060  	// byte with mask
+	//#define CSTOPB 0000100	//2 stop bits
+
+	//#define CPARENB 0000400  // 开启输出时产生奇偶位、输入时进行奇偶校验。
+	//#define CPARODD 0001000  // 输入/输入校验是奇校验。
+
+	//#define PARENB CPARENB  // 开启输出时产生奇偶位、输入时进行奇偶校验。
+	//#define PARODD CPARODD  // 输入/输入校验是奇校验。
+
+//	config.c_cflag &= ~CSIZE;	//no "byte with mask"
+
+	config.c_cflag &= ~PARENB;	//no parity
+	config.c_cflag &= ~CSTOPB;	//1bit stop
+	config.c_cflag |= CS8;		//8bits data
+
+//	config.c_cc[VMIN]  = 1;
+//	config.c_cc[VTIME] = 0;
+
+	 if(cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
+		 fprintf(stderr, "Failed  cfsetispeed %s -- %s", device_name, strerror(errno));
+		 return -1;
+	 }
+
+	 if(tcsetattr(fd, TCSAFLUSH, &config) < 0) {
+		 fprintf(stderr, "Failed  tcsetattr %s -- %s", device_name, strerror(errno));
+		 return -1;
+	 }
+
+	 return 0;
+}
+
 
 int speed_to_flag(int speed)
-
 {
 
 	int i;
@@ -395,4 +419,50 @@ int speed_to_flag(int speed)
 
 	return B9600;
 
+}
+
+
+int wiki(int argc, char** argv)
+{
+        struct termios tio;
+        struct termios stdio;
+        int tty_fd;
+        fd_set rdset;
+
+        unsigned char c='D';
+
+        printf("Please start with %s /dev/ttyS1 (for example)\n",argv[0]);
+        memset(&stdio,0,sizeof(stdio));
+        stdio.c_iflag=0;
+        stdio.c_oflag=0;
+        stdio.c_cflag=0;
+        stdio.c_lflag=0;
+        stdio.c_cc[VMIN]=1;
+        stdio.c_cc[VTIME]=0;
+        tcsetattr(STDOUT_FILENO,TCSANOW,&stdio);
+        tcsetattr(STDOUT_FILENO,TCSAFLUSH,&stdio);
+        fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);       // make the reads non-blocking
+
+        memset(&tio,0,sizeof(tio));
+        tio.c_iflag=0;
+        tio.c_oflag=0;
+        tio.c_cflag=CS8|CREAD|CLOCAL;           // 8n1, see termios.h for more information
+        tio.c_lflag=0;
+        tio.c_cc[VMIN]=1;
+        tio.c_cc[VTIME]=5;
+
+        tty_fd=open(argv[1], O_RDWR | O_NONBLOCK);
+        cfsetospeed(&tio,B115200);            // 115200 baud
+        cfsetispeed(&tio,B115200);            // 115200 baud
+
+        tcsetattr(tty_fd,TCSANOW,&tio);
+        while (c!='q')
+        {
+                if (read(tty_fd,&c,1)>0)        write(STDOUT_FILENO,&c,1);              // if new data is available on the serial port, print it out
+                if (read(STDIN_FILENO,&c,1)>0)  write(tty_fd,&c,1);                     // if new data is available on the console, send it to the serial port
+        }
+
+        close(tty_fd);
+
+        return 0;
 }

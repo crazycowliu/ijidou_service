@@ -2,6 +2,7 @@ package com.android.server;
 
 
 import android.os.ICanbusService;
+import android.util.Log;
 
 public class CanbusService extends ICanbusService.Stub {
 	
@@ -11,12 +12,19 @@ public class CanbusService extends ICanbusService.Stub {
 		boolean park = false;
 	}
 
-  private static final String TAG = "CanbusService";
+//  private static final String LOG_TAG = "CanbusService";
+  private static final String TAG = "CanbusService_JAVA";
 
   CanbusService() {
+	  Log.i(TAG, "CanbusService.java: init");
 	  System.out.println("CanbusService.java: init");
-	  init();
+	  System.out.flush();
+	  
+	  canbus_init1();
+	  
+	  Log.i(TAG, "CanbusService.java: init");
 	  System.out.println("CanbusService.java: finished");
+	  System.out.flush();
   }
   
   public boolean getBluetooth() {
@@ -27,8 +35,8 @@ public class CanbusService extends ICanbusService.Stub {
 		return is_active_bluetooth();
   }
   
-  private static native boolean init();
-  
+  private static native boolean canbus_init1();
+ 
   //interface
   //1 mean bluetooth is open
   //0 mean bluetooth is closed

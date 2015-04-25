@@ -38,7 +38,6 @@ LOCAL_SHARED_LIBRARIES := \
     libandroidfw \
     libbinder \
     libcutils \
-    liblog \
     libhardware \
     libhardware_legacy \
     libnativehelper \
@@ -55,7 +54,6 @@ LOCAL_SHARED_LIBRARIES := \
     libGLESv2
 
 LOCAL_CFLAGS += -DEGL_EGLEXT_PROTOTYPES -DGL_GLEXT_PROTOTYPES
-
 ifeq ($(WITH_MALLOC_LEAK_CHECK),true)
     LOCAL_CFLAGS += -DMALLOC_LEAK_CHECK
 endif
