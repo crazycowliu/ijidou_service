@@ -1,4 +1,4 @@
-#define LOG_TAG "CanbusService10"
+#define LOG_TAG "CanbusService11"
 #define LOG_NDEBUG 0
 //only used when build entire android source code
 //#include <cutils/Log.h>
@@ -8,18 +8,13 @@
 
 #include <android/log.h>
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGF(...)  fprintf(fd_log, __VA_ARGS__)
+#define LOGF(...)  fprintf(f_log, __VA_ARGS__);fflush(f_log);
 
 #include "jni.h"
 #include "JNIHelp.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <utils/misc.h>
 
-/**
- * NO HAL
-#include <hardware/hardware.h>
-#include <hardware/hello.h>
-*/
 #include <stdio.h>
 
 #include <unistd.h>
@@ -31,10 +26,12 @@
 
 #include <pthread.h>
 
-//#define DEVICE_NAME "/dev/canbus"
 #define DEVICE_NAME "/dev/ttyHSL1"
 #define MODULE_NAME "Canbus"
 #define MODULE_AUTHOR "tyholiu@ijidou.com"
+
+#define FILE_LOG 		"/data/user/log_canbus_service"
+#define CANBUS_SERVICE 	"com/android/server/CanbusService"
 
 char RESERVED 	= 0x80;
 char BLUETOOTH 	= 0x40;
@@ -45,52 +42,152 @@ char REV		= 0x04;
 char ILL		= 0x02;
 char ACC		= 0x01;
 
-//TODO: ioctl to set brand rate
 //TODO: get/set complicate class
 //TODO: add listener
 
 namespace android
 {
+  FILE *f_log;
 
   pthread_t canbus_read_t;
+
   char active_info;
 
-  int setup_port(int fd, int baud, int databits, int parity, int stopbits);
-  int setup_port2(int fd, char *device_name);
+  int g_bAttatedT = 0;
+
+  extern JavaVM *cachedJVM;
+
+  int setup_port2(int fd_uart, char *device_name);
+
+
+  static JNIEnv* getJNIEnv()//was JNIEnv
+  {
+	  //JavaVM* jvm = cocos2d::JniHelper::getJavaVM();
+	  if (cachedJVM == NULL) {
+		  LOGF("Failed to get JNIEnv. JniHelper::getJavaVM() is NULL\n");
+		  return NULL;
+	  }
+
+	  JNIEnv *env = NULL;
+	  // get jni environment
+	  jint ret = cachedJVM->GetEnv((void**)&env, JNI_VERSION_1_4);
+
+	  switch (ret) {
+      	  case JNI_OK :
+      		  // Success!
+      		LOGF("getenv successA\n");
+      		  return env;
+
+      	  case JNI_EDETACHED :
+      		  // Thread not attached
+      		LOGF("thread not attached\n");
+      		  // TODO : If calling AttachCurrentThread() on a native thread
+      		  // must call DetachCurrentThread() in future.
+      		  // see: http://developer.android.com/guide/practices/design/jni.html
+
+      		  if (cachedJVM->AttachCurrentThread(&env, NULL) < 0)
+      		  {
+      			LOGF("Failed to get the environment using AttachCurrentThread()\n");
+      			  return NULL;
+      		  } else {
+      			  // Success : Attached and obtained JNIEnv!
+      			LOGF("getenv successB\n");
+      			  g_bAttatedT = 1;
+      			  return env;
+      		  }
+      	  case JNI_EVERSION :
+      		  // Cannot recover from this error
+      		LOGF("JNI interface version 1.4 not supported\n");
+      	  default :
+      		LOGF("Failed to get the environment using GetEnv()\n");
+      		  return NULL;
+	  }
+  }
+
+  static void DetachCurrent()
+  {
+      if(g_bAttatedT)
+      {
+    	  cachedJVM->DetachCurrentThread();
+      }
+  }
 
   void *read_canbus(void *arg) {
 
-	int fd;
-	FILE *fd_log;
+	int fd_uart;
+	JNIEnv *env;
+	jclass clazz;
 
-  	char device_name[] = "/dev/ttyHSL1";
-//  	char device_name[] = "/data/user/abc";
-
-  	fd_log = fopen("/data/user/out_jjww", "w");
-  	if (fd_log == NULL) {
-  	   return NULL;
-  	}
-
-
-  	fprintf(fd_log, "CanbusService10 child thread start..\n");
-  	fflush(fd_log);
   	LOGE("child thread start..\n");
+  	LOGF("child thread start..\n");
 
 
-  	 if ((fd = open(device_name, O_RDWR)) == -1) {
-  		fprintf(fd_log, "Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
-  		  		fflush(fd_log);
-  		 LOGF("Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
+  	//prepare JNI environment
+	LOGE("Check JNIEnv\n");
+	LOGF("Check JNIEnv\n");
 
+	env = (JNIEnv *)arg;
+	if (env == NULL) {
+		LOGE("JNI env is NULL\n");
+		LOGF("JNI env is NULL\n");
+		return NULL;
+	}
+	env = getJNIEnv();
+
+	LOGE("%s env3 = %p\n", LOG_TAG, env);
+	LOGF("%s env3 = %p\n", LOG_TAG, env);
+
+	clazz = env->FindClass(CANBUS_SERVICE);
+
+	if(clazz == NULL){
+		LOGE("find class: %s error\n", CANBUS_SERVICE);
+		LOGF("find class: %s error\n", CANBUS_SERVICE);
+		DetachCurrent();
+		return NULL;
+	}
+	LOGE("find class: %s\n", CANBUS_SERVICE);
+	LOGF("find class: %s\n", CANBUS_SERVICE);
+
+	jfieldID msg_id = env->GetStaticFieldID(clazz, "message", "[B");
+	LOGF("get msg_id succeed\n");
+
+    jbyteArray msg = (jbyteArray)(env->GetStaticObjectField(clazz, msg_id));
+    jsize msg_len = env->GetArrayLength(msg);
+    jbyte *byte_msg = env->GetByteArrayElements(msg, NULL);
+
+    LOGF("get byte_msg succeed...\n");
+
+	jmethodID method1 = env->GetStaticMethodID(clazz, "notifyListeners", "(I)V");
+	//jmethodID method1 = (*env)->GetMethodID(env, clazz, "notifyListeners", "(I)V");
+	if(method1 == NULL){
+		LOGE("find notifyListeners error\n");
+		LOGF("find notifyListeners error\n");
+		DetachCurrent();
+		return NULL;
+	}
+	LOGE("find notifyListeners ");
+	LOGF("find notifyListeners ");
+
+	jmethodID method2 = env->GetStaticMethodID(clazz, "notifyListeners2", "(I[BI)V");
+	if(method1 == NULL){
+		LOGE("find notifyListeners2 error\n");
+		LOGF("find notifyListeners2 error\n");
+		DetachCurrent();
+		return NULL;
+	}
+	LOGE("find notifyListeners2\n");
+	LOGF("find notifyListeners2\n");
+
+  	 if ((fd_uart = open(DEVICE_NAME, O_RDWR)) == -1) {
+  		LOGE("Canbus JNI native: failed to open %s -- %s", DEVICE_NAME, strerror(errno));
+  		LOGF("Canbus JNI native: failed to open %s -- %s", DEVICE_NAME, strerror(errno));
+  		DetachCurrent();
   	    return NULL;
   	 }
-
-  	fprintf(fd_log, "open file ok ..\n");
-  	fflush(fd_log);
   	LOGE("open file ok ..\n");
+  	LOGF("open file ok ..\n");
 
-//  	setup_port(fd, 115200, 8, 0, 1);
-  	setup_port2(fd, device_name);
+  	setup_port2(fd_uart, DEVICE_NAME);
 
   	 char buf[1024];
   	 int len = 1024;
@@ -98,215 +195,124 @@ namespace android
   	 int i;
 
      while (1) {
-    	 fprintf(fd_log, "read_canbus: reading ..\n");
-    	 fflush(fd_log);
         LOGE("read_canbus: reading ..\n");
+        LOGF("read_canbus: reading ..\n");
 
-  	    count = read(fd, buf, 32);
-  	    fprintf(fd_log, "read_canbus: Read %d from %s\n", count, device_name);
-  	    fflush(fd_log);
-  	    LOGE("read_canbus: Read %d from %s\n", count, device_name);
+        //FIXME: message might be read by multiple reads
+  	    count = read(fd_uart, buf, 32);
+
+  	    LOGE("read_canbus: Read %d from %s\n", count, DEVICE_NAME);
+  	    LOGF("read_canbus: Read %d from %s\n", count, DEVICE_NAME);
 
   		for (i = 0; i < count; i++) {
-  			fprintf(fd_log, "%X ", buf[i] & 0x000000FF);
-  			fflush(fd_log);
   			LOGE("%X ", buf[i] & 0x000000FF);
+  			LOGF("%X ", buf[i] & 0x000000FF);
   		}
-  		fprintf(fd_log, "\n");
-  		fflush(fd_log);
   		LOGE("\n");
+  		LOGF("\n");
 
-  		int com_id = buf[3];
+  		len = (buf[2] & 0x000000FF) + 5;
+  		int com_id = (buf[3] & 0x000000FF);
 
-  		switch (com_id) {
-  			case 0x72:
-  				active_info = buf[4];
-  		  	    fprintf(fd_log, "Recevie: 0x72\n");
-  		  	    fflush(fd_log);
-  				break;
-  			case 0x73:
-  				break;
-  		}
+		switch (com_id) {
+			case 0x72:
+				active_info = buf[4];
+				break;
+			case 0x73:
+				break;
+		}
 
-  		sleep(5);
+		//stuff static variable
+        memcpy(byte_msg, buf, len);
+        LOGF("Set static message succeed...\n");
+
+
+  	    //env->CallStaticVoidMethod(clazz, method1, com_id);
+  	    LOGF("Call back method 1 succeed...\n");
+
+  	    //release bytes ?
+  	    LOGF("len = %d...\n", len);
+  	    jbyteArray bytes = env->NewByteArray(len);
+  	    LOGF("Call back method 2 NewByteArray...\n");
+  	    jbyte *byte_array = env->GetByteArrayElements(bytes, NULL);
+  	    LOGF("Call back method 2 GetByteArrayElements...\n");
+  	    memcpy(byte_array, buf, len);
+  	    //void (*CallStaticVoidMethod)(JNIEnv*, jclass, jmethodID, ...);
+
+  	    LOGF("Call back method 2 memcpy...\n");
+  	    env->CallStaticVoidMethod(clazz, method2, com_id, bytes, len);
+
+  	    LOGF("Call back method 2 succeed...\n");
+
+  		//sleep(5);
       }
 
-      close(fd);
+      close(fd_uart);
+      LOGF("close fd_uart succeed...\n");
 
-      fclose(fd_log);
+      DetachCurrent();
+      LOGF("DetachCurrent succeed...\n");
 
       return NULL;
   }
 
   void close() {
 //	  pthread_join(canbus_read_t, NULL);
+	  fclose(f_log);
   }
 
-  //TODO: ioctl
-  static jboolean canbus_init(JNIEnv *env, jclass clazz) {
+  static jboolean canbus_init(JNIEnv *env, jobject obj) {
 
-	  	LOGE("stderr canbus_init  ..\n");
-	  	LOGE("LOGE canbus_init...!\n");
+	  	f_log = fopen(FILE_LOG, "a+");
+	  	if (f_log == NULL) {
+		   LOGE("%s open log file failed\n", LOG_TAG);
+		   LOGF("%s open log file failed\n", LOG_TAG);
+	  	   return -1;
+	  	}
+
+	  	LOGE("%s canbus_init\n", LOG_TAG);
+	  	LOGF("%s canbus_init\n", LOG_TAG);
+
+
+	  	LOGE("%s env = %p\n", LOG_TAG, env);
+	  	LOGF("%s env = %p\n", LOG_TAG, env);
+
 	  	int ret = 0;
+	  	ret = pthread_create(&canbus_read_t, NULL, read_canbus, env);
 
-	    ret = pthread_create(&canbus_read_t, NULL, read_canbus, NULL);
-//	  	read_canbus(NULL);
 	    if (ret != 0){
 	        LOGE("Creat pthread error!\n");
-	        exit(-EINVAL);
+	        LOGF("Creat pthread error!\n");
+	        return -EINVAL;
 	    }
 
 	    return 0;
   }
 
-  static jboolean canbus_get_bluetooth(JNIEnv *env, jobject clazz){
+  //static is jclass
+  //non-static is jobject
+  static jboolean canbus_get_bluetooth(JNIEnv *env, jobject obj){
     int val = 0;
 
-    LOGE("Canbus JNI native active_info=%d", active_info);
-    return (active_info & BLUETOOTH);
+    LOGE("Canbus JNI native active_info = %d\n", active_info);
+    LOGF("Canbus JNI native active_info = %d\n", active_info);
+    return (active_info & BLUETOOTH);;
   }
 
-  static jboolean canbus_is_active_bluetooth(JNIEnv *env, jobject clazz){
-	  return canbus_get_bluetooth(env, clazz);
+  static jboolean canbus_is_active_bluetooth(JNIEnv *env, jobject obj){
+	  return canbus_get_bluetooth(env, obj);
   }
 
-
-  //FIXME: check me
-  int setup_port(int fd, int baud, int databits, int parity, int stopbits)
-
-  {
-
-  	struct termio term_attr;
-
-  	/* Get current setting */
-
-  	if (ioctl(fd, TCGETA, &term_attr) < 0) {
-  		LOGE("ioctl(fd, TCGETA, &term_attr\n");
-  		return -1;
-  	}
-
-  	/* Backup old setting */
-
-  //	memcpy(&oterm_attr, &term_attr, sizeof(struct termio));
-
-  	term_attr.c_iflag &= ~(INLCR | IGNCR | ICRNL | ISTRIP);
-  	term_attr.c_oflag &= ~(OPOST | ONLCR | OCRNL);
-  	term_attr.c_lflag &= ~(ISIG  | ECHO  | ICANON | NOFLSH);
-  	term_attr.c_cflag &= ~CBAUD;
-
-  //	term_attr.c_cflag |= CREAD | speed_to_flag(baud);
-//  	speed_to_flag(baud);
-  	term_attr.c_cflag |= (CREAD | B115200);
-
-  	/* Set databits */
-
-  	term_attr.c_cflag &= ~(CSIZE);
-  	switch (databits) {
-  	case 5:
-
-  		term_attr.c_cflag |= CS5;
-  		break;
-
-  	case 6:
-
-  		term_attr.c_cflag |= CS6;
-
-  		break;
-
-  	case 7:
-
-  		term_attr.c_cflag |= CS7;
-
-  		break;
-
-  	case 8:
-
-  	default:
-
-  		term_attr.c_cflag |= CS8;
-
-  		break;
-
-  	}
-
-  	/* Set parity */
-
-  	switch (parity) {
-
-  	case 1: /* Odd parity */
-
-  		term_attr.c_cflag |= (PARENB | PARODD);
-
-  		break;
-
-  	case 2: /* Even parity */
-
-  		term_attr.c_cflag |= PARENB;
-
-  		term_attr.c_cflag &= ~(PARODD);
-
-  		break;
-
-  	case 0: /* None parity */
-
-  	default:
-
-  		term_attr.c_cflag &= ~(PARENB);
-
-  		break;
-
-  	}
-
-  	/* Set stopbits */
-
-  	switch (stopbits) {
-
-  	case 2: /* 2 stopbits */
-
-  		term_attr.c_cflag |= CSTOPB;
-
-  		break;
-
-  	case 1: /* 1 stopbits */
-
-  	default:
-
-  		term_attr.c_cflag &= ~CSTOPB;
-
-  		break;
-
-  	}
-
-  	term_attr.c_cc[VMIN] = 1;
-
-  	term_attr.c_cc[VTIME] = 0;
-
-  	if (ioctl(fd, TCSETAW, &term_attr) < 0) {
-  		LOGE("ioctl(fd, TCSETAW, &term_attr) < 0\n");
-  		return -1;
-
-  	}
-
-  	if (ioctl(fd, TCFLSH, 2) < 0) {
-  		LOGE("ioctl(fd, TCFLSH, 2) < 0\n");
-  		return -1;
-
-  	}
-
-  	return 0;
-
-  }
-
-  int setup_port2(int fd, char *device_name) {
+  int setup_port2(int fd_uart, char *device_name) {
 
   	struct termios config;
 
-  	if(!isatty(fd)) {
+  	if(!isatty(fd_uart)) {
   	  fprintf(stderr, "Not a tty %s -- %s", device_name, strerror(errno));
   	  return -1;
   	}
 
-  	if(tcgetattr(fd, &config) < 0) {
+  	if(tcgetattr(fd_uart, &config) < 0) {
   		fprintf(stderr, "Can not get config %s -- %s", device_name, strerror(errno));
   		return -1;
   	}
@@ -327,11 +333,11 @@ namespace android
   	//#define CSIZE 0000060  	// byte with mask
   	//#define CSTOPB 0000100	//2 stop bits
 
-  	//#define CPARENB 0000400  // 开启输出时产生奇偶位、输入时进行奇偶校验。
-  	//#define CPARODD 0001000  // 输入/输入校验是奇校验。
+  	//#define CPARENB 0000400
+  	//#define CPARODD 0001000
 
-  	//#define PARENB CPARENB  // 开启输出时产生奇偶位、输入时进行奇偶校验。
-  	//#define PARODD CPARODD  // 输入/输入校验是奇校验。
+  	//#define PARENB CPARENB
+  	//#define PARODD CPARODD
 
   //	config.c_cflag &= ~CSIZE;	//no "byte with mask"
 
@@ -343,12 +349,12 @@ namespace android
   //	config.c_cc[VTIME] = 0;
 
   	 if(cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
-  		 fprintf(stderr, "Failed  cfsetispeed %s -- %s", device_name, strerror(errno));
+  		 fprintf(stderr, "Failed  cfsetispeed %s -- %s", DEVICE_NAME, strerror(errno));
   		 return -1;
   	 }
 
-  	 if(tcsetattr(fd, TCSAFLUSH, &config) < 0) {
-  		 fprintf(stderr, "Failed  tcsetattr %s -- %s", device_name, strerror(errno));
+  	 if(tcsetattr(fd_uart, TCSAFLUSH, &config) < 0) {
+  		 fprintf(stderr, "Failed  tcsetattr %s -- %s", DEVICE_NAME, strerror(errno));
   		 return -1;
   	 }
 
@@ -365,6 +371,8 @@ F      jfloat            float
 B      jbyte            byte
 C      jchar           char
 S      jshort          short
+Ljava/lang/String;	String
+
 
 Array
 [I       jintArray      int[]
@@ -375,6 +383,16 @@ Array
 [D    jdoubleArray double[]
 [J     jlongArray     long[]
 [Z    jbooleanArray boolean[]
+"[Ljava/lang/Object;"	Object[]
+
+"()Ljava/lang/String;" 	--> String f();
+
+"(ILjava/lang/Class;)J" --> f(int i, Class c);
+
+"([B)V" 				--> void String(byte[] bytes);
+
+
+"Lxxx/yyy/Zzz;"	class describer
 	*/
 
   static const JNINativeMethod method_table[] = {
@@ -384,6 +402,6 @@ Array
   };
 
   int register_android_server_CanbusService(JNIEnv *env) {
-    return jniRegisterNativeMethods(env, "com/android/server/CanbusService", method_table, NELEM(method_table));
+    return jniRegisterNativeMethods(env, CANBUS_SERVICE, method_table, NELEM(method_table));
   }
 };

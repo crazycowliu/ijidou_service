@@ -2,9 +2,9 @@ package android.os;
 
 interface ICanbusService {
 	
-//	boolean getBluetooth();
+	boolean getBluetooth();
 	
-//	boolean isActiveBluetooth();
+s	boolean isActiveBluetooth();
 
 	
 	

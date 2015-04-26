@@ -58,6 +58,24 @@ reply.writeNoException();
 reply.writeInt(((_result)?(1):(0)));
 return true;
 }
+case TRANSACTION_addListener:
+{
+data.enforceInterface(DESCRIPTOR);
+android.os.ICanbusListener _arg0;
+_arg0 = android.os.ICanbusListener.Stub.asInterface(data.readStrongBinder());
+this.addListener(_arg0);
+reply.writeNoException();
+return true;
+}
+case TRANSACTION_removeListener:
+{
+data.enforceInterface(DESCRIPTOR);
+android.os.ICanbusListener _arg0;
+_arg0 = android.os.ICanbusListener.Stub.asInterface(data.readStrongBinder());
+this.removeListener(_arg0);
+reply.writeNoException();
+return true;
+}
 }
 return super.onTransact(code, data, reply, flags);
 }
@@ -110,10 +128,56 @@ _data.recycle();
 }
 return _result;
 }
+/**
+      * Register a callback.
+      */
+@Override public void addListener(android.os.ICanbusListener listener) throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+_data.writeStrongBinder((((listener!=null))?(listener.asBinder()):(null)));
+mRemote.transact(Stub.TRANSACTION_addListener, _data, _reply, 0);
+_reply.readException();
+}
+finally {
+_reply.recycle();
+_data.recycle();
+}
+}
+/**
+      * Unregister a callback.
+      */
+@Override public void removeListener(android.os.ICanbusListener listener) throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+_data.writeStrongBinder((((listener!=null))?(listener.asBinder()):(null)));
+mRemote.transact(Stub.TRANSACTION_removeListener, _data, _reply, 0);
+_reply.readException();
+}
+finally {
+_reply.recycle();
+_data.recycle();
+}
+}
 }
 static final int TRANSACTION_getBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
 static final int TRANSACTION_isActiveBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+static final int TRANSACTION_addListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
+static final int TRANSACTION_removeListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);
 }
 public boolean getBluetooth() throws android.os.RemoteException;
 public boolean isActiveBluetooth() throws android.os.RemoteException;
+/**
+      * Register a callback.
+      */
+public void addListener(android.os.ICanbusListener listener) throws android.os.RemoteException;
+/**
+      * Unregister a callback.
+      */
+public void removeListener(android.os.ICanbusListener listener) throws android.os.RemoteException;
 }

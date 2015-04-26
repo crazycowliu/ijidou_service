@@ -50,7 +50,8 @@ D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\app\Cont
 
 D:\workspace\SourceTree\jidou_service\external\canbus\canbus_thread.c	/home/liufeng/repo/external/canbus
 
-D:\workspace\eclipse\hello\src\cn\crazycow\android\HelloActivity.java	/home/liufeng/repo/out/target/product/Alto4NA/system/app
+D:\workspace\eclipse\hello\src\cn\crazycow\android\HelloActivity.java		/home/liufeng/repo/packages/apps/Hello/src/cn/crazycow/android
+																			/home/liufeng/repo/out/target/product/Alto4NA/system/app
 
 		framework-base_intermediates/classes/android
 		 out/target/common/obj/JAVA_LIBRARIES/ext_intermediates
@@ -64,6 +65,9 @@ adb remount
 adb shell
 chmod 777 system
 
+
+>netstat -ano | findstr 5037 > out_netstat
+
 adb push C:\Users\liufeng\Desktop\framework.jar 		/system/framework/
 adb push C:\Users\liufeng\Desktop\framework2.jar 		/system/framework/
 adb push C:\Users\liufeng\Desktop\ext.jar 				/system/framework/
@@ -75,6 +79,8 @@ adb install C:\Users\liufeng\Desktop\hello.apk
 
 adb reboot
 
+adb kill-server
 
+adb start-server 
 
-
+ÎÚÁúÉ½

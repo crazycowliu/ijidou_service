@@ -20,6 +20,9 @@
 #include "utils/misc.h"
 
 namespace android {
+
+JavaVM* cachedJVM;
+
 int register_android_server_AlarmManagerService(JNIEnv* env);
 int register_android_server_ConsumerIrService(JNIEnv *env);
 int register_android_server_InputApplicationHandle(JNIEnv* env);
@@ -72,6 +75,7 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved)
     register_android_server_HelloService(env);
     register_android_server_CanbusService(env);
 
+    cachedJVM = vm;
 
     return JNI_VERSION_1_4;
 }
