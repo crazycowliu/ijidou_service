@@ -171,7 +171,6 @@ LOCAL_SRC_FILES += \
 	core/java/android/os/IUpdateLock.aidl \
 	core/java/android/os/IUserManager.aidl \
 	core/java/android/os/IVibratorService.aidl \
-	core/java/android/os/IHelloService.aidl \
 	core/java/android/os/ICanbusService.aidl \
 	core/java/android/os/ICanbusListener.aidl \
 	core/java/android/service/notification/INotificationListener.aidl \

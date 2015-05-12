@@ -3,11 +3,12 @@ package android.os;
 import android.os.ICanbusListener;
 
 interface ICanbusService {
-	
-	boolean getBluetooth();
-	
-	boolean isActiveBluetooth();
 
+	  /**
+	   * Its invoker should make sure the given bufs has enough size
+	   */	
+	  byte[] queryMessage(byte comId, in byte[] queryMsg);
+	
     /**
       * Register a callback.
       */
@@ -18,4 +19,13 @@ interface ICanbusService {
       */
     void removeListener(ICanbusListener listener);
     
+    /**
+      * Register a callback, according to comId
+      */
+    void addListener2(int comId, ICanbusListener listener);
+    
+    /**
+      * Unregister a callback, according to comId
+      */
+    void removeListener2(int comId, ICanbusListener listener);
 }

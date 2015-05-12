@@ -17,19 +17,27 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
-#include <linux/spi/spidev.h>
+//#include <linux/spi/spidev.h>
+#include </home/liufeng/repo/kernel/include/uapi/linux/spi/spidev.h>
 
 #define pr_err(...)   printf(__VA_ARGS__)
 #define pr_debug(...) printf(__VA_ARGS__)
 
 //#include "Debug.h"
-#define SPI_DEBUG 0
+#define SPI_DEBUG 1
+//
 
 static const char *device = "/dev/spidev0.0";
-static uint8_t mode = 0; 	/* SPI通信使用全双工，设置CPOL＝0，CPHA＝0。 */
-static uint8_t bits = 8; /* ８ｂiｔｓ读写，MSB first。*/
-static uint32_t speed = 12 * 1000 * 1000;/* 设置12M传输速度 */
+											//mode 3: CPOL=1, CPHA＝1
+static uint8_t mode = 3; 					/* SPI通信使用全双工，设置CPOL＝0，CPHA＝0。 */
+static uint8_t bits = 8; 					/* ８ｂiｔｓ读写，MSB first。*/
+//static uint32_t speed = 12 * 1000 * 1000;	/* 设置12M传输速度 */
+static uint32_t speed = 1 * 1000 * 1000;
+											//receive: 16MHz/4 = 4M
+											//send here is: 3.2M, 4MHz > 3.2MHz, ok
+static uint8_t lsb = 0;						//LSB_FIRST=0, MSB
 static uint16_t delay = 0;
+
 static int g_SPI_Fd = 0;
 
 static void pabort(const char *s)
@@ -98,28 +106,48 @@ int SPI_Transfer(const uint8_t *TxBuf, uint8_t *RxBuf, int len)
  ＊返回值：0 成功
  * 开发人员：Lzy 2013－5－22
  */
-int SPI_Write(uint8_t *TxBuf, int len)
+int SPI_Write(uint8_t *TxBuf, int len, char *str, char *t)
 {
     int ret;
     int fd = g_SPI_Fd;
+    int i = 0;
+    int j = 0;
 
-    ret = write(fd, TxBuf, len);
-    if (ret < 0)
-        pr_err("SPI Write errorn");
-    else
-    {
-#if SPI_DEBUG
-        int i;
-        pr_debug("nSPI Write [Len:%d]: ", len);
-        for (i = 0; i < len; i++)
-        {
-            if (i % 8 == 0)
-            printf("nt");
-            printf("0x%02X ", TxBuf[i]);
+//    ret = write(fd, TxBuf, len);
+    char buf[] = "Hello world!";
+
+    len = strlen(str);
+    printf("str=%s\n", str);
+    printf("len=%d\n", len);
+    fflush(stdout);
+
+    if (t == NULL) {
+        while (1) {
+            for (i = 0; i < len; i++) {
+    			ret = write(fd, str+i, 1);
+    			if (ret < 0)
+    				pr_err("SPI Write error\n");
+    			else {
+    				//				printf("0x%02X ", str[i]);
+    				printf("%c ", str[i]);
+    				fflush(stdout);
+    			}
+
+    			sleep(1);
+            }
         }
-        printf("n");
+    } else {
+        while (1) {
+			ret = write(fd, str, len + 1);
+			if (ret < 0)
+				pr_err("SPI Write error\n");
+			else {
+				printf("%s ", str);
+				fflush(stdout);
+			}
 
-#endif
+			sleep(1);
+        }
     }
 
     return ret;
@@ -139,7 +167,7 @@ int SPI_Read(uint8_t *RxBuf, int len)
     int fd = g_SPI_Fd;
     ret = read(fd, RxBuf, len);
     if (ret < 0)
-        pr_err("SPI Read errorn");
+        pr_err("SPI Read error\n");
     else
     {
 #if SPI_DEBUG
@@ -177,7 +205,7 @@ int SPI_Open(void)
     if (fd < 0)
         pabort("can't open device");
     else
-        pr_debug("SPI - Open Succeed. Start Init SPI...n");
+        pr_debug("SPI - Open Succeed. Start Init SPI...\n");
 
     g_SPI_Fd = fd;
     /*
@@ -213,9 +241,18 @@ int SPI_Open(void)
     if (ret == -1)
         pabort("can't get max speed hz");
 
-    pr_debug("spi mode: %dn", mode);
-    pr_debug("bits per word: %dn", bits);
-    pr_debug("max speed: %d KHz (%d MHz)n", speed / 1000, speed / 1000 / 1000);
+    ret = ioctl(fd, SPI_IOC_WR_LSB_FIRST, &lsb);
+    if (ret == -1)
+        pabort("can't set lsb");
+
+    ret = ioctl(fd, SPI_IOC_RD_LSB_FIRST, &lsb);
+    if (ret == -1)
+        pabort("can't get lsb");
+
+    pr_debug("spi lsb:  %d\n", lsb);
+    pr_debug("spi mode: %d\n", mode);
+    pr_debug("bits per word: %d\n", bits);
+    pr_debug("max speed: %d KHz (%d MHz)\n", speed / 1000, speed / 1000 / 1000);
 
     return ret;
 }
@@ -254,18 +291,18 @@ int SPI_LookBackTest(void)
     	rx[i] = 0;
     }
 
-    pr_debug("nSPI - LookBack Mode Test...n");
+    pr_debug("nSPI - LookBack Mode Test...\n");
     ret = SPI_Transfer(tx, rx, BufSize);
     if (ret > 1)
     {
         ret = memcmp(tx, rx, BufSize);
         if (ret != 0)
         {
-            pr_err("LookBack Mode Test errorn");
+            pr_err("LookBack Mode Test error\n");
 //            pabort("error");
         }
         else
-            pr_debug("SPI - LookBack Mode OKn");
+            pr_debug("SPI - LookBack Mode OK\n");
     }
 
     return ret;
@@ -276,7 +313,16 @@ int main(int argc, char **argv) {
 	if (!strcmp(argv[1], "self")) {
 		SPI_LookBackTest();
 	} else if(!strcmp(argv[1], "rw")) {
+//		uint8_t TxBuf[] = {0X1F, 0X20};
+		unsigned char TxBuf[] = "AB";
+		SPI_Open();
+		if (argc == 3) {
+			SPI_Write(TxBuf, 2, argv[2], NULL);
+		} else {
+			SPI_Write(TxBuf, 2, argv[2], argv[3]);
+		}
 
+		SPI_Close();
 	}
 
 

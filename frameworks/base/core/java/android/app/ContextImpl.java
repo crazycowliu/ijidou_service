@@ -604,20 +604,12 @@ class ContextImpl extends Context {
                 return new ConsumerIrManager(ctx);
             }});
 
-        registerService("hello", new ServiceFetcher() {
-                        public Object getService(ContextImpl ctx) {
-                                IBinder b = ServiceManager.getService("hello");
-                                return b;
-                        }
-        });
-        
         registerService("canbus", new ServiceFetcher() {
             public Object getService(ContextImpl ctx) {
                     IBinder b = ServiceManager.getService("canbus");
                     return b;
             }
         });
-        
     }
 
     static ContextImpl getImpl(Context context) {

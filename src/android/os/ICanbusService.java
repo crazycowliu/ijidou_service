@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: D:\\workspace\\eclipse\\AidlService\\src\\android\\os\\ICanbusService.aidl
+ * Original file: D:\\workspace\\eclipse\\hello\\src\\android\\os\\ICanbusService.aidl
  */
 package android.os;
 public interface ICanbusService extends android.os.IInterface
@@ -42,20 +42,16 @@ case INTERFACE_TRANSACTION:
 reply.writeString(DESCRIPTOR);
 return true;
 }
-case TRANSACTION_getBluetooth:
+case TRANSACTION_queryMessage:
 {
 data.enforceInterface(DESCRIPTOR);
-boolean _result = this.getBluetooth();
+byte _arg0;
+_arg0 = data.readByte();
+byte[] _arg1;
+_arg1 = data.createByteArray();
+byte[] _result = this.queryMessage(_arg0, _arg1);
 reply.writeNoException();
-reply.writeInt(((_result)?(1):(0)));
-return true;
-}
-case TRANSACTION_isActiveBluetooth:
-{
-data.enforceInterface(DESCRIPTOR);
-boolean _result = this.isActiveBluetooth();
-reply.writeNoException();
-reply.writeInt(((_result)?(1):(0)));
+reply.writeByteArray(_result);
 return true;
 }
 case TRANSACTION_addListener:
@@ -73,6 +69,28 @@ data.enforceInterface(DESCRIPTOR);
 android.os.ICanbusListener _arg0;
 _arg0 = android.os.ICanbusListener.Stub.asInterface(data.readStrongBinder());
 this.removeListener(_arg0);
+reply.writeNoException();
+return true;
+}
+case TRANSACTION_addListener2:
+{
+data.enforceInterface(DESCRIPTOR);
+int _arg0;
+_arg0 = data.readInt();
+android.os.ICanbusListener _arg1;
+_arg1 = android.os.ICanbusListener.Stub.asInterface(data.readStrongBinder());
+this.addListener2(_arg0, _arg1);
+reply.writeNoException();
+return true;
+}
+case TRANSACTION_removeListener2:
+{
+data.enforceInterface(DESCRIPTOR);
+int _arg0;
+_arg0 = data.readInt();
+android.os.ICanbusListener _arg1;
+_arg1 = android.os.ICanbusListener.Stub.asInterface(data.readStrongBinder());
+this.removeListener2(_arg0, _arg1);
 reply.writeNoException();
 return true;
 }
@@ -94,33 +112,21 @@ public java.lang.String getInterfaceDescriptor()
 {
 return DESCRIPTOR;
 }
-@Override public boolean getBluetooth() throws android.os.RemoteException
+/**
+	   * Its invoker should make sure the given bufs has enough size
+	   */
+@Override public byte[] queryMessage(byte comId, byte[] queryMsg) throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
 android.os.Parcel _reply = android.os.Parcel.obtain();
-boolean _result;
+byte[] _result;
 try {
 _data.writeInterfaceToken(DESCRIPTOR);
-mRemote.transact(Stub.TRANSACTION_getBluetooth, _data, _reply, 0);
+_data.writeByte(comId);
+_data.writeByteArray(queryMsg);
+mRemote.transact(Stub.TRANSACTION_queryMessage, _data, _reply, 0);
 _reply.readException();
-_result = (0!=_reply.readInt());
-}
-finally {
-_reply.recycle();
-_data.recycle();
-}
-return _result;
-}
-@Override public boolean isActiveBluetooth() throws android.os.RemoteException
-{
-android.os.Parcel _data = android.os.Parcel.obtain();
-android.os.Parcel _reply = android.os.Parcel.obtain();
-boolean _result;
-try {
-_data.writeInterfaceToken(DESCRIPTOR);
-mRemote.transact(Stub.TRANSACTION_isActiveBluetooth, _data, _reply, 0);
-_reply.readException();
-_result = (0!=_reply.readInt());
+_result = _reply.createByteArray();
 }
 finally {
 _reply.recycle();
@@ -164,14 +170,55 @@ _reply.recycle();
 _data.recycle();
 }
 }
+/**
+      * Register a callback, according to comId
+      */
+@Override public void addListener2(int comId, android.os.ICanbusListener listener) throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+_data.writeInt(comId);
+_data.writeStrongBinder((((listener!=null))?(listener.asBinder()):(null)));
+mRemote.transact(Stub.TRANSACTION_addListener2, _data, _reply, 0);
+_reply.readException();
 }
-static final int TRANSACTION_getBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
-static final int TRANSACTION_isActiveBluetooth = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
-static final int TRANSACTION_addListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
-static final int TRANSACTION_removeListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);
+finally {
+_reply.recycle();
+_data.recycle();
 }
-public boolean getBluetooth() throws android.os.RemoteException;
-public boolean isActiveBluetooth() throws android.os.RemoteException;
+}
+/**
+      * Unregister a callback, according to comId
+      */
+@Override public void removeListener2(int comId, android.os.ICanbusListener listener) throws android.os.RemoteException
+{
+android.os.Parcel _data = android.os.Parcel.obtain();
+android.os.Parcel _reply = android.os.Parcel.obtain();
+try {
+_data.writeInterfaceToken(DESCRIPTOR);
+_data.writeInt(comId);
+_data.writeStrongBinder((((listener!=null))?(listener.asBinder()):(null)));
+mRemote.transact(Stub.TRANSACTION_removeListener2, _data, _reply, 0);
+_reply.readException();
+}
+finally {
+_reply.recycle();
+_data.recycle();
+}
+}
+}
+static final int TRANSACTION_queryMessage = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+static final int TRANSACTION_addListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+static final int TRANSACTION_removeListener = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
+static final int TRANSACTION_addListener2 = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);
+static final int TRANSACTION_removeListener2 = (android.os.IBinder.FIRST_CALL_TRANSACTION + 4);
+}
+/**
+	   * Its invoker should make sure the given bufs has enough size
+	   */
+public byte[] queryMessage(byte comId, byte[] queryMsg) throws android.os.RemoteException;
 /**
       * Register a callback.
       */
@@ -180,4 +227,12 @@ public void addListener(android.os.ICanbusListener listener) throws android.os.R
       * Unregister a callback.
       */
 public void removeListener(android.os.ICanbusListener listener) throws android.os.RemoteException;
+/**
+      * Register a callback, according to comId
+      */
+public void addListener2(int comId, android.os.ICanbusListener listener) throws android.os.RemoteException;
+/**
+      * Unregister a callback, according to comId
+      */
+public void removeListener2(int comId, android.os.ICanbusListener listener) throws android.os.RemoteException;
 }

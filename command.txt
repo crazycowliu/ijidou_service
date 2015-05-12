@@ -1,3 +1,6 @@
+. /etc/profile          //to include java
+
+
 mmm -B packages/apps/Hello/
 
 
@@ -25,12 +28,12 @@ D:\workspace\SourceTree\jidou_service\frameworks\base\services\jni\Android.mk			
     com_android_server_HelloService.cpp \
     com_android_server_CanbusService.cpp \
     
-./makeQucii -t Alto4NA mm -B frameworks/base/services/jni												out/target/product/Alto4NA/system/lib/libandroid_servers.so
+./makeQucii -t Alto4NA mm -B frameworks/base/services/jni													out/target/product/Alto4NA/system/lib/libandroid_servers.so
 
-D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\os\IHelloService.aidl			/home/liufeng/repo/frameworks/base/core/java/android/os
+D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\os\IHelloService.aidl				/home/liufeng/repo/frameworks/base/core/java/android/os
 D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\os\ICanbusService.aidl			/home/liufeng/repo/frameworks/base/core/java/android/os
 
-D:\workspace\SourceTree\jidou_service\frameworks\base\Android.mk										/home/liufeng/repo/frameworks/base
+D:\workspace\SourceTree\jidou_service\frameworks\base\Android.mk											/home/liufeng/repo/frameworks/base
 	core/java/android/os/IHelloService.aidl \
 	core/java/android/os/ICanbusService.aidl \
 
@@ -40,16 +43,14 @@ D:\workspace\SourceTree\jidou_service\frameworks\base\services\java\com\android\
 
 ./makeQucii -t Alto4NA mm -B frameworks/base/services/java
 
-
 D:\workspace\SourceTree\jidou_service\frameworks\base\core\java\android\app\ContextImpl.java				/home/liufeng/repo/frameworks/base/core/java/android/app
 
-./makeQucii -t Alto4NA mm -B frameworks/base/			/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework_intermediates
-														/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework2_intermediates/classes
-														/home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework-base_intermediates/classes/android
-														
+./makeQucii -t Alto4NA mm -B frameworks/base/			                                                  /home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework_intermediates
+														                                                                        /home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework2_intermediates/classes
+														                                                                        /home/liufeng/repo/out/target/common/obj/JAVA_LIBRARIES/framework-base_intermediates/classes/android
 
-D:\workspace\SourceTree\jidou_service\external\canbus\canbus_thread.c	/home/liufeng/repo/external/canbus
-
+D:\workspace\SourceTree\jidou_service\external\canbus\canbus.c				/home/liufeng/repo/external/canbus
+																			
 D:\workspace\eclipse\hello\src\cn\crazycow\android\HelloActivity.java		/home/liufeng/repo/packages/apps/Hello/src/cn/crazycow/android
 																			/home/liufeng/repo/out/target/product/Alto4NA/system/app
 

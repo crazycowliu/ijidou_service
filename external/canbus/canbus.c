@@ -47,7 +47,7 @@ static int speed_arr[] = {
 };
 
 void read_msg ();
-void write_msg ();
+void write_msg (char *device_name, char *msg);
 unsigned char check_sum (str_msg *m);
 void *read_canbus(void *arg);
 int speed_to_flag(int speed);
@@ -55,19 +55,24 @@ int speed_to_flag(int speed);
 int setup_port(int fd, int baud, int databits, int parity, int stopbits);
 int setup_port2(int fd, char *device_name);
 int wiki(int argc,char** argv);
+void hex_string_to_binary_array(char buf[], int len, char *message);
 
 int main(int argc, char **argv) {
 
 
 	if (!strcmp(argv[2], "write")) {
-		write_msg(argv[1]);
+		if (argc == 4) {
+			write_msg(argv[1], argv[3]);
+		} else {
+			write_msg(argv[1], NULL);
+		}
+
 	} else if(!strcmp(argv[2], "read")) {
 		read_msg(argv[1]);
 	} else if(!strcmp(argv[2], "thread")){
 
 		pthread_t read_t;
 	  	int ret = 0;
-
 
 	    ret = pthread_create(&read_t, NULL, read_canbus, NULL);
 	    if (ret != 0){
@@ -114,9 +119,14 @@ void read_msg (char *device_name) {
 	close(fd);
 }
 
-void write_msg (char *device_name) {
+void write_msg (char *device_name, char *message) {
 	int fd;
-	int i;
+	int i, j;
+	int ch_h = 0;
+	int ch_l = 0;
+	char ch;
+	int len;
+	unsigned char *cp;
 
 	if ((fd = open(device_name, O_RDWR)) == -1) {
 	  fprintf(stderr, "Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
@@ -130,7 +140,12 @@ void write_msg (char *device_name) {
 
 	msg.comID = 0xD2;
 	msg.data[0] = 0x01;
-	sprintf(&msg.data[1], "%s", "92.5MHz     ");
+	if (message == NULL) {
+		sprintf(&(msg.data[1]), "%s", "92.5MHz     ");
+	} else {
+		hex_string_to_binary_array(&(msg.data[1]), 12, message);
+	}
+
 	msg.length = 1 + 12;
 
 //	msg.comID = 0xE2;
@@ -166,6 +181,83 @@ void write_msg (char *device_name) {
 	write(fd, &msg.checksum, 1);
 
 	close(fd);
+}
+
+//stuff 0 if not less than buf
+void hex_string_to_binary_array(char buf[], int buf_len, char *message) {
+	int i = 0;
+	int j = 0;
+	int len = strlen(message);
+	char *cp = &buf[0];
+	int ch_h;
+	int ch_l;
+	char ch;
+	//msg="AB"
+	//msg="01 "
+	//msg="31 "
+	//msg="31 32 33 34"
+	//msg="31 32 33 34 "
+	//msg="31 32 33 34 31 32 33 34 31 32 33 34 31 32 33 34 "
+
+	for (i = 0; i < len; i++) {
+		ch = message[i];
+		if (ch == ' ') {
+			if (message[i-2] >= '0' && message[i-2] <= '9') {
+				ch_h = message[i-2] - '0';
+			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
+				ch_h = message[i-2] - 'A' + 10;
+			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
+				ch_h = message[i-2] - 'a' + 10;
+			} else {
+				ch_h = 0;
+			}
+
+			if (message[i-1] >= '0' && message[i-1] <= '9') {
+				ch_l = message[i-1] - '0';
+			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
+				ch_l = message[i-1] - 'A' + 10;
+			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
+				ch_l = message[i-1] - 'a' + 10;
+			} else {
+				ch_l = 0;
+			}
+
+			cp[j++] = ch_h * 16 + ch_l;
+			if (j == buf_len) {
+				break;
+			}
+		}
+	}
+
+	if (j < buf_len) {
+		//i == len
+		if (message[i-1] != ' ') {
+			if (message[i-2] >= '0' && message[i-2] <= '9') {
+				ch_h = message[i-2] - '0';
+			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
+				ch_h = message[i-2] - 'A' + 10;
+			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
+				ch_h = message[i-2] - 'a' + 10;
+			} else {
+				ch_h = 0;
+			}
+
+			if (message[i-1] >= '0' && message[i-1] <= '9') {
+				ch_l = message[i-1] - '0';
+			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
+				ch_l = message[i-1] - 'A' + 10;
+			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
+				ch_l = message[i-1] - 'a' + 10;
+			} else {
+				ch_l = 0;
+			}
+			cp[j++] = ch_h * 16 + ch_l;
+		}
+	}
+
+	for (; j < buf_len; j++) {
+		cp[j] = ' ';
+	}
 }
 
 unsigned char check_sum (str_msg *m) {
@@ -206,7 +298,6 @@ void *read_canbus(void *arg) {
 
 	fprintf(stderr, "open file ok ..\n");
 
-//	setup_port(fd, 115200, 8, 0, 1);
 	int rc = setup_port2(fd, device_name);
 
 	if (rc != 0) {
@@ -241,103 +332,6 @@ void *read_canbus(void *arg) {
     close(fd);
 
     return NULL;
-}
-
-
-int setup_port(int fd, int baud, int databits, int parity, int stopbits)
-
-{
-
-	struct termio term_attr;
-
-	/* Get current setting */
-
-	if (ioctl(fd, TCGETA, &term_attr) < 0) {
-		fprintf(stderr, "ioctl(fd, TCGETA, &term_attr\n");
-		return -1;
-	}
-
-	/* Backup old setting */
-
-//	memcpy(&oterm_attr, &term_attr, sizeof(struct termio));
-
-	term_attr.c_iflag &= ~(INLCR | IGNCR | ICRNL | ISTRIP);
-	term_attr.c_oflag &= ~(OPOST | ONLCR | OCRNL);
-	term_attr.c_lflag &= ~(ISIG | ECHO | ICANON | NOFLSH);
-	term_attr.c_cflag &= ~CBAUD;
-
-//	term_attr.c_cflag |= CREAD | speed_to_flag(baud);
-	speed_to_flag(baud);
-	term_attr.c_cflag |= (CREAD | B115200);
-
-	/* Set databits */
-
-	term_attr.c_cflag &= ~(CSIZE);
-
-	switch (databits) {
-	case 5:
-		term_attr.c_cflag |= CS5;
-		break;
-	case 6:
-		term_attr.c_cflag |= CS6;
-		break;
-	case 7:
-		term_attr.c_cflag |= CS7;
-		break;
-	case 8:
-	default:
-		term_attr.c_cflag |= CS8;
-		break;
-	}
-
-	/* Set parity */
-
-	switch (parity) {
-
-	case 1: /* Odd parity */
-		term_attr.c_cflag |= (PARENB | PARODD);
-		break;
-	case 2: /* Even parity */
-		term_attr.c_cflag |= PARENB;
-		term_attr.c_cflag &= ~(PARODD);
-		break;
-	case 0: /* None parity */
-	default:
-		term_attr.c_cflag &= ~(PARENB);
-		break;
-	}
-
-	/* Set stopbits */
-
-	switch (stopbits) {
-	//#define CSTOPB 0000100
-
-	case 2: /* 2 stopbits */
-		term_attr.c_cflag |= CSTOPB;
-		break;
-	case 1: /* 1 stopbits */
-	default:
-		term_attr.c_cflag &= ~CSTOPB;
-		break;
-	}
-
-	term_attr.c_cc[VMIN] = 1;
-	term_attr.c_cc[VTIME] = 0;
-
-	if (ioctl(fd, TCSETAW, &term_attr) < 0) {
-		fprintf(stderr, "ioctl(fd, TCSETAW, &term_attr) < 0\n");
-		return -1;
-
-	}
-
-	if (ioctl(fd, TCFLSH, 2) < 0) {
-		fprintf(stderr, "ioctl(fd, TCFLSH, 2) < 0\n");
-		return -1;
-
-	}
-
-	return 0;
-
 }
 
 int setup_port2(int fd, char *device_name) {
@@ -401,7 +395,6 @@ int setup_port2(int fd, char *device_name) {
 
 int speed_to_flag(int speed)
 {
-
 	int i;
 
 	fprintf(stderr, "sizeof(speed_arr) / sizeof(int) = %d!\n", sizeof(speed_arr) / sizeof(int));

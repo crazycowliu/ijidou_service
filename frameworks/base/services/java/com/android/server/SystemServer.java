@@ -787,13 +787,6 @@ class ServerThread {
             }
             
             try {
-                Slog.i(TAG, "Hello Service");
-                ServiceManager.addService("hello", new HelloService());
-            } catch (Throwable e) {
-                reportWtf("starting Hello Service", e);
-            }
-            
-            try {
                 Slog.i(TAG, "Canbus Service");
                 ServiceManager.addService("canbus", new CanbusService());
             } catch (Throwable e) {
