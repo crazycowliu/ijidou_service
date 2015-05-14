@@ -1,0 +1,53 @@
+
+ 1136  git log
+ 1137  git status
+ 1138  git branch -a      //shows both local and remote branches
+ 1139  git checkout -b jidou_r4.4.4 gerrit/jidou_r4.4.4 
+
+
+ 1142  git add -A .       //updates the index using the current content found in the working tree
+                          //prepare content staged for the next commit
+ 1143  git status
+ 1144  git commit -m "Implement CanbusService with uart communicator"
+ 1145  git config --global user.email "tycholiu@ijidou.com"
+ 1147  git config --global user.name "FengLiu"
+ 1151  git log --stat
+ 1154  git log
+ 1155  git log 3ececf741a1e71fc3d75fe3415126ef36cebc8a8 --stat
+ 1156  git show HEAD
+ 1157  git branch -a
+ 1158  git remote -v
+ 1159  cat .git/config 
+ 
+ 1161  git push gerrit jidou_r4.4.4:jidou_r4.4.4 
+ 1162  history
+       git log gerrit/jidou_r4.4.4        //after push
+       git commit --amend //merge commit
+       
+       
+ 
+ 1340  du -h --max-depth=1
+ 
+ 1347  git fetch gerrit
+ 1348  git status
+ 1349  cat .git/config 
+ 1350  git checkout -b back HEAD
+ 1351  git status
+ 1352  git branch -a
+ 1353  git checkout jidou_r4.4.4
+ 1354  git status
+ 
+ 1359  git reset core/java/android/bluetooth/BluetoothA2dp.java
+ 1361  git reset core/java/android/bluetooth/IBluetoothA2dp.aidl
+ 1365  git commit -m "Fix Canbuse reboot bug"
+ 1371  git branch -D back     //delete branch 
+ 1374  git checkout jidou_r4.4.4
+ 1375  git status
+ 1376  git pull
+ 
+ 1390  cat MERGE_RR 
+ 1392  git log
+ 1393  git log back 
+ 1394  git reset --hard e82fc1034310afc98b1f8bcc5e1f1d5afdab0d51
+ 1401  cat .git/MERGE_MSG 
+ 1411  git commit -a

@@ -1,14 +1,23 @@
 #define LOG_TAG "CanbusService_jni"
 #define LOG_NDEBUG 0
+#include <android/log.h>
 //only used when build entire android source code
 //#include <cutils/Log.h>
 //if you build with ndk or mm/mmm, use android/log.h
 //#include <cutils/Log.h>
 //#include <utils/Log.h>
 
-#include <android/log.h>
+#define CANBUS_EBUG
+
+#ifdef CANBUS_EBUG
+  #define LOGF(...)  fprintf(f_log, __VA_ARGS__);fflush(f_log);
+#else
+  #define LOGF(...)
+#endif
+
+
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGF(...)  fprintf(f_log, __VA_ARGS__);fflush(f_log);
+
 
 #include "jni.h"
 #include "JNIHelp.h"
@@ -132,7 +141,7 @@ namespace android
       LOGE("Canbus JNI native: failed to open %s -- %s", DEVICE_NAME, strerror(errno));
       LOGF("Canbus JNI native: failed to open %s -- %s", DEVICE_NAME, strerror(errno));
       DetachCurrent();
-        return NULL;
+      return NULL;
     }
     LOGE("open file ok ..\n");
     LOGF("open file ok ..\n");
@@ -144,11 +153,20 @@ namespace android
     int count = 0;
     int i;
 
+    jbyteArray bytes = env->NewByteArray(1024);
+    if (bytes == NULL) {
+      LOGF("Canbus JNI native: can not alloc byte array\n");
+      DetachCurrent();
+      return NULL;
+    }
+    jbyte *byte_array = env->GetByteArrayElements(bytes, NULL);
+
      while (1) {
         LOGE("read_canbus: reading ..\n");
         LOGF("read_canbus: reading ..\n");
 
         //FIXME: message might be read by multiple reads
+        //FIXME: synchronized with write if possible
         count = read(fd_uart, buf, 32);
 
         LOGE("read_canbus: Read %d from %s\n", count, DEVICE_NAME);
@@ -165,16 +183,14 @@ namespace android
         int com_id = (buf[3] & 0x000000FF);
 
         LOGF("len = %d...\n", len);
-        jbyteArray bytes = env->NewByteArray(len);
-        jbyte *byte_array = env->GetByteArrayElements(bytes, NULL);
         memcpy(byte_array, buf, len);
 
         LOGF("Call back method 2 memcpy...\n");
         env->CallVoidMethod(g_obj, method2, com_id, bytes, len);
         LOGF("Call back method 2 succeed...\n");
-
-        env->DeleteLocalRef(bytes);
       }
+
+      env->DeleteLocalRef(bytes);
 
       close(fd_uart);
       LOGF("close fd_uart succeed...\n");
@@ -194,7 +210,7 @@ namespace android
 
   static jboolean canbus_init(JNIEnv *env, jobject obj) {
 
-      f_log = fopen(FILE_LOG, "a+");
+      f_log = fopen(FILE_LOG, "w+");
       if (f_log == NULL) {
        LOGE("%s open log file failed\n", LOG_TAG);
        LOGF("%s open log file failed\n", LOG_TAG);

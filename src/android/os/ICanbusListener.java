@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: D:\\workspace\\eclipse\\hello2\\src\\android\\os\\ICanbusListener.aidl
+ * Original file: D:\\workspace\\eclipse\\hello\\src\\android\\os\\ICanbusListener.aidl
  */
 package android.os;
 public interface ICanbusListener extends android.os.IInterface
@@ -42,15 +42,6 @@ case INTERFACE_TRANSACTION:
 reply.writeString(DESCRIPTOR);
 return true;
 }
-case TRANSACTION_actionPerformed:
-{
-data.enforceInterface(DESCRIPTOR);
-int _arg0;
-_arg0 = data.readInt();
-this.actionPerformed(_arg0);
-reply.writeNoException();
-return true;
-}
 case TRANSACTION_messageArrived:
 {
 data.enforceInterface(DESCRIPTOR);
@@ -82,21 +73,6 @@ public java.lang.String getInterfaceDescriptor()
 {
 return DESCRIPTOR;
 }
-@Override public void actionPerformed(int actionId) throws android.os.RemoteException
-{
-android.os.Parcel _data = android.os.Parcel.obtain();
-android.os.Parcel _reply = android.os.Parcel.obtain();
-try {
-_data.writeInterfaceToken(DESCRIPTOR);
-_data.writeInt(actionId);
-mRemote.transact(Stub.TRANSACTION_actionPerformed, _data, _reply, 0);
-_reply.readException();
-}
-finally {
-_reply.recycle();
-_data.recycle();
-}
-}
 //call back, so message is in-type
 
 @Override public void messageArrived(int msgId, byte[] message, int length) throws android.os.RemoteException
@@ -117,12 +93,9 @@ _data.recycle();
 }
 }
 }
-static final int TRANSACTION_actionPerformed = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
-static final int TRANSACTION_messageArrived = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+static final int TRANSACTION_messageArrived = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
 }
-public void actionPerformed(int actionId) throws android.os.RemoteException;
 //call back, so message is in-type
 
 public void messageArrived(int msgId, byte[] message, int length) throws android.os.RemoteException;
-
 }

@@ -1,0 +1,1 @@
+./makeQucii -t Alto4NA mm -B device/jrdcom/Alto4NA

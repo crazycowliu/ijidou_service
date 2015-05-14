@@ -1,0 +1,651 @@
+From b563904196c882f6903feb22a7960fe963127d66 Mon Sep 17 00:00:00 2001
+From: lixiaolong <lixiaolong@qucii.com>
+Date: Tue, 12 May 2015 15:31:30 +0800
+Subject: [PATCH]                   [CR]: 0000                   [CAUSE]:add
+ bt avrcp                   [REVIEW]:furao                  
+ [SIDEEFFECT]:NO.                   [PROJECT]:BT3901
+
+Change-Id: Iad87609025c7f6b1e0041b7dcc350017114e11cb
+
+Signed-off-by: lixiaolong <lixiaolong@qucii.com>
+---
+ bttestapp/AndroidManifest.xml                      |    4 +
+ bttestapp/res/layout/activity_avrcp_test.xml       |   94 ++++++++
+ bttestapp/res/values/strings.xml                   |    9 +
+ .../bluetooth/bttestapp/AvrcpTestActivity.java     |  225 ++++++++++++++++++++
+ .../bluetooth/bttestapp/MainActivity.java          |    5 +
+ .../bluetooth/bttestapp/ProfileService.java        |   53 +++++
+ .../bluetooth/bttestapp/ServicesFragment.java      |   62 +++++-
+ 7 files changed, 450 insertions(+), 2 deletions(-)
+ create mode 100644 bttestapp/res/layout/activity_avrcp_test.xml
+ create mode 100644 bttestapp/src/org/codeaurora/bluetooth/bttestapp/AvrcpTestActivity.java
+
+diff --git a/bttestapp/AndroidManifest.xml b/bttestapp/AndroidManifest.xml
+index facadd4..3cb6047 100644
+--- a/bttestapp/AndroidManifest.xml
++++ b/bttestapp/AndroidManifest.xml
+@@ -35,6 +35,10 @@
+             android:configChanges="orientation|keyboardHidden|screenSize"
+             android:launchMode="singleTop" />
+         <activity
++            android:name=".AvrcpTestActivity"
++            android:configChanges="orientation|keyboardHidden|screenSize"
++            android:launchMode="singleTop" />
++        <activity
+             android:name=".PbapTestActivity"
+             android:configChanges="orientation|keyboardHidden|screenSize"
+             android:launchMode="singleTop" />
+diff --git a/bttestapp/res/layout/activity_avrcp_test.xml b/bttestapp/res/layout/activity_avrcp_test.xml
+new file mode 100644
+index 0000000..62c0ad3
+--- /dev/null
++++ b/bttestapp/res/layout/activity_avrcp_test.xml
+@@ -0,0 +1,94 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *        * Redistributions of source code must retain the above copyright
++ *            notice, this list of conditions and the following disclaimer.
++ *        * Redistributions in binary form must reproduce the above copyright
++ *            notice, this list of conditions and the following disclaimer in the
++ *            documentation and/or other materials provided with the distribution.
++ *        * Neither the name of The Linux Foundation nor
++ *            the names of its contributors may be used to endorse or promote
++ *            products derived from this software without specific prior written
++ *            permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NON-INFRINGEMENT ARE DISCLAIMED.    IN NO EVENT SHALL THE COPYRIGHT OWNER OR
++ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++-->
++
++<LinearLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="horizontal"
++    android:layout_margin="5dip"
++    android:baselineAligned="false">
++
++    <Button
++    android:id="@+id/onClickPassthruStop"
++    android:layout_width="wrap_content"
++    android:layout_height="wrap_content"
++    android:layout_alignParentTop="true"
++    android:text="@string/passthru_stop"
++    android:layout_marginBottom="15dp"
++    android:layout_marginRight="15dp"
++    android:onClick="onClickPassthruStop" />
++
++    <Button
++    android:id="@+id/onClickPassthruPause"
++    android:layout_width="wrap_content"
++    android:layout_height="wrap_content"
++    android:layout_alignParentTop="true"
++    android:layout_toLeftOf="@id/onClickPassthruStop"
++    android:text="@string/passthru_pause"
++    android:layout_marginBottom="15dp"
++    android:layout_marginRight="15dp"
++    android:onClick="onClickPassthruPause" />
++
++    <Button
++    android:id="@+id/onClickPassthruPlay"
++    android:layout_width="wrap_content"
++    android:layout_height="wrap_content"
++    android:layout_alignParentTop="true"
++    android:layout_toLeftOf="@id/onClickPassthruPause"
++    android:text="@string/passthru_play"
++    android:layout_marginBottom="15dp"
++    android:layout_marginRight="15dp"
++    android:onClick="onClickPassthruPlay" />
++
++    <Button
++    android:id="@+id/onClickPassthruVolDown"
++    android:layout_width="wrap_content"
++    android:layout_height="wrap_content"
++    android:layout_alignParentBottom="true"
++    android:text="@string/passthru_vol_down"
++    android:layout_marginBottom="15dp"
++    android:layout_marginRight="15dp"
++    android:onClick="onClickPassthruVolDown" />
++
++    <Button
++    android:id="@+id/onClickPassthruVolUp"
++    android:layout_width="wrap_content"
++    android:layout_height="wrap_content"
++    android:layout_alignParentBottom="true"
++    android:layout_toLeftOf="@id/onClickPassthruVolDown"
++    android:text="@string/passthru_vol_up"
++    android:layout_marginBottom="15dp"
++    android:layout_marginRight="15dp"
++    android:onClick="onClickPassthruVolUp" />
++
++</LinearLayout>
++
+diff --git a/bttestapp/res/values/strings.xml b/bttestapp/res/values/strings.xml
+index cf8bcc0..df81ab8 100644
+--- a/bttestapp/res/values/strings.xml
++++ b/bttestapp/res/values/strings.xml
+@@ -58,6 +58,7 @@
+     <string name="title_hfp_test">HFP Test</string>
+     <string name="title_pbap_test">PBAP Test</string>
+     <string name="title_map_test">MAP Test</string>
++    <string name="title_avrcp_test">AVRCP Test</string>
+     <string name="title_vcard_filter">Filter Attributes</string>
+     <string name="title_message_filter">Select Message Parameters</string>
+ 
+@@ -327,4 +328,12 @@
+     <string name="hfptest_result_delayed_text">Error: delayed</string>
+     <string name="hfptest_result_blacklisted_text">Error: blacklisted</string>
+     <string name="hfptest_result_cme_text">Error: CME</string>
++
++       <!-- AVRCP -->
++    <string name="passthru_play">PLAY</string>
++    <string name="passthru_pause">PAUSE</string>
++    <string name="passthru_stop">STOP</string>
++    <string name="passthru_vol_up">VOLUP</string>
++    <string name="passthru_vol_down">VOLDOWN</string>
++
+ </resources>
+diff --git a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/AvrcpTestActivity.java b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/AvrcpTestActivity.java
+new file mode 100644
+index 0000000..4c37657
+--- /dev/null
++++ b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/AvrcpTestActivity.java
+@@ -0,0 +1,225 @@
++/*
++ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *        * Redistributions of source code must retain the above copyright
++ *            notice, this list of conditions and the following disclaimer.
++ *        * Redistributions in binary form must reproduce the above copyright
++ *            notice, this list of conditions and the following disclaimer in the
++ *            documentation and/or other materials provided with the distribution.
++ *        * Neither the name of The Linux Foundation nor
++ *            the names of its contributors may be used to endorse or promote
++ *            products derived from this software without specific prior written
++ *            permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NON-INFRINGEMENT ARE DISCLAIMED.    IN NO EVENT SHALL THE COPYRIGHT OWNER OR
++ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++
++package org.codeaurora.bluetooth.bttestapp;
++
++import android.app.ActionBar;
++import android.app.DialogFragment;
++import android.bluetooth.BluetoothDevice;
++import android.bluetooth.BluetoothA2dp;
++import android.bluetooth.BluetoothProfile;
++import android.content.BroadcastReceiver;
++import android.content.ComponentName;
++import android.content.Context;
++import android.content.Intent;
++import android.content.IntentFilter;
++import android.content.ServiceConnection;
++import android.os.Bundle;
++import android.os.IBinder;
++import android.view.Menu;
++import android.view.MenuItem;
++import android.widget.Toast;
++import android.view.View;
++
++import org.codeaurora.bluetooth.bttestapp.R;
++import org.codeaurora.bluetooth.bttestapp.util.Logger;
++
++import java.util.ArrayList;
++
++public class AvrcpTestActivity extends MonkeyActivity implements IBluetoothConnectionObserver {
++
++    private final String TAG = "AvrcpTestActivity";
++
++    private ActionBar mActionBar = null;
++    BluetoothA2dp mBluetoothA2dp;
++    ProfileService mProfileService = null;
++    BluetoothDevice mDevice;
++    public static final int KEY_STATE_PRESSED = 0;
++    public static final int KEY_STATE_RELEASED = 1;
++    public static final int AVRC_ID_PLAY = 0x44;
++    public static final int AVRC_ID_PAUSE = 0x46;
++    public static final int AVRC_ID_VOL_UP = 0x41;
++    public static final int AVRC_ID_VOL_DOWN = 0x42;
++    public static final int AVRC_ID_STOP = 0x45;
++
++    private final BroadcastReceiver mA2dpReceiver = new BroadcastReceiver() {
++        @Override
++        public void onReceive(Context context, Intent intent) {
++            String action = intent.getAction();
++            BluetoothDevice device = (BluetoothDevice)
++                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
++
++            if (action.equals(BluetoothA2dp.ACTION_AVRCP_CONNECTION_STATE_CHANGED)) {
++                int prevState = intent.getIntExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, 0);
++                int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0);
++                onReceiveActionConnectionStateChanged(device, prevState, state, intent.getExtras());
++            }
++        }
++
++        private void onReceiveActionConnectionStateChanged(BluetoothDevice device,
++                int prevState, int state, Bundle features) {
++            Logger.v(TAG, "onReceiveActionConnectionStateChanged: AVRCP: " +
++                    device.getAddress() + " (" +
++                    String.valueOf(prevState) + " -> " +
++                    String.valueOf(state) + ")");
++        }
++    };
++
++    private final ServiceConnection mA2dpServiceConnection = new ServiceConnection() {
++        @Override
++        public void onServiceConnected(ComponentName name, IBinder service) {
++            Logger.v(TAG, "onServiceConnected()");
++            mProfileService = ((ProfileService.LocalBinder) service).getService();
++            mBluetoothA2dp = mProfileService.getA2dp();
++        }
++
++        @Override
++        public void onServiceDisconnected(ComponentName name) {
++            Logger.v(TAG, "onServiceDisconnected()");
++            mProfileService = null;
++            mBluetoothA2dp = null;
++        }
++    };
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        Logger.v(TAG, "onCreate()");
++
++        ActivityHelper.initialize(this, R.layout.activity_avrcp_test);
++        BluetoothConnectionReceiver.registerObserver(this);
++        ActivityHelper.setActionBarTitle(this, R.string.title_avrcp_test);
++        // bind to app service
++        Intent intent = new Intent(this, ProfileService.class);
++        bindService(intent, mA2dpServiceConnection, BIND_AUTO_CREATE);
++    }
++
++    @Override
++    protected void onDestroy() {
++        Logger.v(TAG, "onDestroy");
++        super.onDestroy();
++        unbindService(mA2dpServiceConnection);
++        BluetoothConnectionReceiver.removeObserver(this);
++    }
++
++    @Override
++    protected void onResume() {
++        Logger.v(TAG, "onResume");
++        IntentFilter filter = new IntentFilter();
++        filter.addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED);
++        registerReceiver(mA2dpReceiver, filter);
++        super.onResume();
++    }
++
++    @Override
++    protected void onPause() {
++        Logger.v(TAG, "onPause");
++        unregisterReceiver(mA2dpReceiver);
++        super.onPause();
++    }
++
++    @Override
++    public boolean onCreateOptionsMenu(Menu menu) {
++        mActionBarMenu = menu;
++        return true;
++    }
++
++    @Override
++    public void onDeviceChanged(BluetoothDevice device) {
++        Logger.v(TAG, "onDeviceChanged()");
++        mDevice = device;
++    }
++
++    @Override
++    public void onDeviceDisconected() {
++        Logger.v(TAG, "onDeviceDisconected");
++    }
++
++    private void prepareActionBar() {
++        Logger.v(TAG, "prepareActionBar()");
++
++        mActionBar = getActionBar();
++        if (mActionBar != null) {
++            mActionBar.setTitle(R.string.title_avrcp_test);
++            mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
++        }
++    }
++
++    public void onClickPassthruPlay(View v) {
++        Logger.v(TAG, "onClickPassthruPlay()");
++        if ((mBluetoothA2dp != null) && (mBluetoothA2dp.isAvrcpConnected(mDevice))){
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_PLAY, KEY_STATE_PRESSED);
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_PLAY, KEY_STATE_RELEASED);
++        } else {
++            Logger.e(TAG, "passthru command not sent, connection unavailable");
++        }
++    }
++
++    public void onClickPassthruPause(View v) {
++        Logger.v(TAG, "onClickPassthruPause()");
++        if ((mBluetoothA2dp != null) && (mBluetoothA2dp.isAvrcpConnected(mDevice))){
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_PAUSE, KEY_STATE_PRESSED);
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_PAUSE, KEY_STATE_RELEASED);
++        } else {
++            Logger.e(TAG, "passthru command not sent, connection unavailable");
++        }
++    }
++
++    public void onClickPassthruStop(View v) {
++        Logger.v(TAG, "onClickPassthruStop()");
++        if ((mBluetoothA2dp != null) && (mBluetoothA2dp.isAvrcpConnected(mDevice))){
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_STOP, KEY_STATE_PRESSED);
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_STOP, KEY_STATE_RELEASED);
++        } else {
++            Logger.e(TAG, "passthru command not sent, connection unavailable");
++        }
++
++    }
++    public void onClickPassthruVolUp(View v) {
++        Logger.v(TAG, "onClickPassthruVolUp()");
++        if ((mBluetoothA2dp != null) && (mBluetoothA2dp.isAvrcpConnected(mDevice))){
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_VOL_UP, KEY_STATE_PRESSED);
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_VOL_UP, KEY_STATE_RELEASED);
++        } else {
++            Logger.e(TAG, "passthru command not sent, connection unavailable");
++        }
++
++    }
++
++    public void onClickPassthruVolDown(View v) {
++        Logger.v(TAG, "onClickPassthruVolDown()");
++        if ((mBluetoothA2dp != null) && (mBluetoothA2dp.isAvrcpConnected(mDevice))){
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_VOL_DOWN, KEY_STATE_PRESSED);
++            mBluetoothA2dp.sendPassThroughCmd(AVRC_ID_VOL_DOWN, KEY_STATE_RELEASED);
++        } else {
++            Logger.e(TAG, "passthru command not sent, connection unavailable");
++        }
++    }
++}
++
+diff --git a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/MainActivity.java b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/MainActivity.java
+index a4dc0b3..64c48d6 100644
+--- a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/MainActivity.java
++++ b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/MainActivity.java
+@@ -112,6 +112,11 @@ public class MainActivity extends MonkeyActivity {
+                             mServicesFragment.addService(ServicesFragment.Service.Type.PBAP, null);
+                         } else if (BluetoothUuid.Handsfree_AG.equals(uuid)) {
+                             mServicesFragment.addService(ServicesFragment.Service.Type.HFP, null);
++                        } else if (BluetoothUuid.AvrcpTarget.equals(uuid) ||
++                                    BluetoothUuid.AudioSource.equals(uuid) ||
++                                    BluetoothUuid.AudioSink.equals(uuid)) {
++                            Log.v(TAG, "Adding AVRCP");
++                            mServicesFragment.addService(ServicesFragment.Service.Type.AVRCP, null);
+                         }
+                     }
+                 }
+diff --git a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ProfileService.java b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ProfileService.java
+index 217a2a6..a17032b 100644
+--- a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ProfileService.java
++++ b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ProfileService.java
+@@ -35,6 +35,7 @@ import android.app.Service;
+ import android.bluetooth.BluetoothAdapter;
+ import android.bluetooth.BluetoothDevice;
+ import android.bluetooth.BluetoothHandsfreeClient;
++import android.bluetooth.BluetoothA2dp;
+ import android.bluetooth.BluetoothMasInstance;
+ import android.bluetooth.BluetoothProfile;
+ import android.bluetooth.BluetoothProfile.ServiceListener;
+@@ -71,6 +72,8 @@ public class ProfileService extends Service {
+ 
+     public static final String ACTION_HFP_CONNECTION_STATE = "org.codeaurora.bluetooth.action.HFP_CONNECTION_STATE";
+ 
++    public static final String ACTION_AVRCP_CONNECTION_STATE = "org.codeaurora.bluetooth.action.AVRCP_CONNECTION_STATE";
++
+     public static final String ACTION_PBAP_CONNECTION_STATE = "org.codeaurora.bluetooth.action.PBAP_CONNECTION_STATE";
+ 
+     public static final String ACTION_MAP_CONNECTION_STATE = "org.codeaurora.bluetooth.action.MAP_CONNECTION_STATE";
+@@ -103,6 +106,8 @@ public class ProfileService extends Service {
+ 
+     private BluetoothHandsfreeClient mHfpClient = null;
+ 
++    private BluetoothA2dp mA2dp = null;
++
+     private BluetoothPbapClient mPbapClient = null;
+ 
+     private IPbapServiceCallback mPbapCallback = null;
+@@ -547,6 +552,27 @@ public class ProfileService extends Service {
+                 }
+ 
+                 ProfileService.this.sendBroadcast(new_intent);
++            } else if(BluetoothA2dp.ACTION_AVRCP_CONNECTION_STATE_CHANGED.equals(action)) {
++                int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1);
++                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
++                if (mDevice == null || device == null) {
++                    Log.e(TAG, "Unexpected error!");
++                    return;
++                }
++                Log.d(TAG,"AVRCP connection state changed for: "+ device);
++                Log.d(TAG, "mDevice: " + mDevice.getAddress());
++                if (mDevice.equals(device)) {
++                    Intent new_intent = new Intent(ACTION_AVRCP_CONNECTION_STATE);
++                    Log.d(TAG, "state: " + state);
++                    if (state == 1) {
++                        new_intent.putExtra(EXTRA_CONNECTED, true);
++                    } else {
++                        new_intent.putExtra(EXTRA_CONNECTED, false);
++                    }
++                    ProfileService.this.sendBroadcast(new_intent);
++                } else {
++                    Log.d(TAG,"AVRCP connection state change not updated");
++                }
+             } else if (PBAP_AUTH_ACTION_RESPONSE.equals(action)) {
+                 String key = intent.getStringExtra(PBAP_AUTH_EXTRA_KEY);
+                 mPbapClient.setAuthResponse(key);
+@@ -599,6 +625,23 @@ public class ProfileService extends Service {
+         }
+     };
+ 
++    private final ServiceListener mA2dpServiceListener = new ServiceListener() {
++        @Override
++        public void onServiceConnected(int profile, BluetoothProfile proxy) {
++            if (profile == BluetoothProfile.A2DP) {
++                mA2dp = (BluetoothA2dp) proxy;
++            }
++        }
++
++        @Override
++        public void onServiceDisconnected(int profile) {
++            if (profile == BluetoothProfile.A2DP) {
++                mA2dp = null;
++            }
++        }
++    };
++
++
+     private void createPbapAuthNotification() {
+         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+ 
+@@ -702,10 +745,13 @@ public class ProfileService extends Service {
+         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+         filter.addAction(BluetoothHandsfreeClient.ACTION_CONNECTION_STATE_CHANGED);
+         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
++        filter.addAction(BluetoothA2dp.ACTION_AVRCP_CONNECTION_STATE_CHANGED);
+         registerReceiver(mReceiver, filter);
+ 
+         mAdapter.getProfileProxy(getApplicationContext(), mHfpServiceListener,
+                 BluetoothProfile.HANDSFREE_CLIENT);
++        mAdapter.getProfileProxy(getApplicationContext(), mA2dpServiceListener,
++                BluetoothProfile.A2DP);
+     }
+ 
+     @Override
+@@ -722,6 +768,9 @@ public class ProfileService extends Service {
+         mAdapter.closeProfileProxy(BluetoothProfile.HANDSFREE_CLIENT,
+                 mHfpClient);
+ 
++        mAdapter.closeProfileProxy(BluetoothProfile.A2DP,
++                mA2dp);
++
+         unregisterReceiver(mReceiver);
+ 
+         if (mPbapClient != null) {
+@@ -769,6 +818,10 @@ public class ProfileService extends Service {
+         return mHfpClient;
+     }
+ 
++    public BluetoothA2dp getA2dp() {
++        return mA2dp;
++    }
++
+     public BluetoothPbapClient getPbapClient() {
+         if (mDevice == null) {
+             return null;
+diff --git a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ServicesFragment.java b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ServicesFragment.java
+index 4d3feb9..75aaa8e 100644
+--- a/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ServicesFragment.java
++++ b/bttestapp/src/org/codeaurora/bluetooth/bttestapp/ServicesFragment.java
+@@ -52,6 +52,7 @@ import android.widget.ListAdapter;
+ import android.widget.ListView;
+ import android.widget.Switch;
+ import android.widget.TextView;
++import android.bluetooth.BluetoothA2dp;
+ 
+ import org.codeaurora.bluetooth.mapclient.BluetoothMasClient;
+ import org.codeaurora.bluetooth.pbapclient.BluetoothPbapClient;
+@@ -98,6 +99,18 @@ public class ServicesFragment extends ListFragment {
+ 
+                 connEvent = true;
+ 
++            } else if (ProfileService.ACTION_AVRCP_CONNECTION_STATE.equals(action)) {
++                connState = intent.getBooleanExtra(ProfileService.EXTRA_CONNECTED, false);
++
++                Service srv = new Service(Service.Type.AVRCP, null);
++                idx = mAdapter.getItemPos(srv);
++
++                if (idx < 0) {
++                    Log.w(TAG, "Cannot find AVRCP service item");
++                }
++                Log.v(TAG, "idx: " + idx + " connection state: " + connState);
++                connEvent = true;
++
+             } else if (ProfileService.ACTION_PBAP_CONNECTION_STATE.equals(action)) {
+                 connState = intent.getBooleanExtra(ProfileService.EXTRA_CONNECTED, false);
+ 
+@@ -151,7 +164,13 @@ public class ServicesFragment extends ListFragment {
+ 
+                 if (connEvent) {
+                     swSrv.setChecked(connState);
+-                    swSrv.setEnabled(true);
++                    Service srv = (Service)mAdapter.getItem(idx);
++                    if (srv.mType.equals(Service.Type.AVRCP)) {
++                        Log.w(TAG, "not enabling checkbox as it is AVRCP");
++                        swSrv.setEnabled(false);
++                    } else {
++                        swSrv.setEnabled(true);
++                    }
+                     swNotif.setEnabled(connState);
+                     swNotif.setChecked(false);
+                 }
+@@ -172,7 +191,8 @@ public class ServicesFragment extends ListFragment {
+         enum Type {
+             HFP("Hands-Free Profile (AG)"),
+             PBAP("Phone Book Access Profile (PSE)"),
+-            MAP("Message Access Profile (MSE)");
++            MAP("Message Access Profile (MSE)"),
++            AVRCP("Audio Video Remote Control Profile (TG)");
+ 
+             final String mTitle;
+ 
+@@ -363,6 +383,29 @@ public class ServicesFragment extends ListFragment {
+ 
+                         break;
+                     }
++
++                    case AVRCP: {
++                        Log.v(TAG, "getView: AVRCP");
++                        BluetoothA2dp cli = mActivity.mProfileService.getA2dp();
++
++                        if (cli == null || bluetoothOn == false) {
++                            swSrv.setChecked(false);
++                            swSrv.setEnabled(false);
++                            break;
++                        }
++
++                        if (cli.isAvrcpConnected(mActivity.mDevice)) {
++                            Log.v(TAG, "AVRCP Connected: setChecked to True");
++                            swSrv.setChecked(true);
++                            swSrv.setEnabled(false);
++                        } else {
++                            Log.v(TAG, "AVRCP Not Connected: setChecked to False");
++                            swSrv.setChecked(false);
++                            swSrv.setEnabled(false);
++                        }
++                        break;
++                    }
++
+                 }
+             }
+ 
+@@ -445,6 +488,10 @@ public class ServicesFragment extends ListFragment {
+                         buttonView.setEnabled(false);
+                     }
+                     break;
++                  
++                    case AVRCP: 
++                      // not to be handled
++                   break; 
+             }
+         }
+     }
+@@ -477,6 +524,7 @@ public class ServicesFragment extends ListFragment {
+         filter.addAction(ProfileService.ACTION_HFP_CONNECTION_STATE);
+         filter.addAction(ProfileService.ACTION_PBAP_CONNECTION_STATE);
+         filter.addAction(ProfileService.ACTION_MAP_CONNECTION_STATE);
++        filter.addAction(ProfileService.ACTION_AVRCP_CONNECTION_STATE);
+         filter.addAction(ProfileService.ACTION_MAP_NOTIFICATION_STATE);
+         getActivity().registerReceiver(mReceiver, filter);
+ 
+@@ -516,6 +564,16 @@ public class ServicesFragment extends ListFragment {
+                 intent.putExtra(ProfileService.EXTRA_MAP_INSTANCE_ID, srv.mMasInstance.getId());
+                 break;
+ 
++            case AVRCP:
++                if (mActivity.mProfileService.getA2dp().
++                    isAvrcpConnected(mActivity.mDevice) != false)
++                    intent = new Intent(getActivity(), AvrcpTestActivity.class);
++                else {
++                    Log.e(TAG, "AVRCP is not connected");
++                    return;
++                }
++                break;
++
+             default:
+                 // this should never happen!
+                 throw new IllegalArgumentException();
+-- 
+1.7.9.5
+

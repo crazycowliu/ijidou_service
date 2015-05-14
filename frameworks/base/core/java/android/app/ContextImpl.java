@@ -96,6 +96,9 @@ import android.os.SystemVibrator;
 import android.os.UserManager;
 import android.os.storage.IMountService;
 import android.os.storage.StorageManager;
+//add by zj
+import android.os.CanbusManager;
+import android.os.ICanbusService;
 import android.print.IPrintManager;
 import android.print.PrintManager;
 import android.telephony.MSimTelephonyManager;
@@ -603,13 +606,32 @@ class ContextImpl extends Context {
             public Object createService(ContextImpl ctx) {
                 return new ConsumerIrManager(ctx);
             }});
-
-        registerService("canbus", new ServiceFetcher() {
+        
+        /* 
+         * remove by zj; unuseful?
+        registerService("hello", new ServiceFetcher() {
+                        public Object getService(ContextImpl ctx) {
+                                IBinder b = ServiceManager.getService("hello");
+                                return b;
+                        }
+        });
+        */
+        //add by liufeng
+        registerService(CANBUS_SERVICE, new ServiceFetcher() {
             public Object getService(ContextImpl ctx) {
-                    IBinder b = ServiceManager.getService("canbus");
-                    return b;
+            	//modify by zj
+                
+            	IBinder b = ServiceManager.getService(CANBUS_SERVICE);
+            	if (b != null && b instanceof IBinder) {
+            	  ICanbusService service = ICanbusService.Stub.asInterface(b);
+            	  return new CanbusManager(service,ctx);
+            	} else {
+            	  Log.w(TAG, "ICanbusService is null !!!");
+            	  return null;
+            	}
             }
         });
+        
     }
 
     static ContextImpl getImpl(Context context) {

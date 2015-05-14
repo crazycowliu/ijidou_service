@@ -45,8 +45,8 @@ return true;
 case TRANSACTION_queryMessage:
 {
 data.enforceInterface(DESCRIPTOR);
-byte _arg0;
-_arg0 = data.readByte();
+int _arg0;
+_arg0 = data.readInt();
 byte[] _arg1;
 _arg1 = data.createByteArray();
 byte[] _result = this.queryMessage(_arg0, _arg1);
@@ -115,14 +115,14 @@ return DESCRIPTOR;
 /**
 	   * Its invoker should make sure the given bufs has enough size
 	   */
-@Override public byte[] queryMessage(byte comId, byte[] queryMsg) throws android.os.RemoteException
+@Override public byte[] queryMessage(int comId, byte[] queryMsg) throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
 android.os.Parcel _reply = android.os.Parcel.obtain();
 byte[] _result;
 try {
 _data.writeInterfaceToken(DESCRIPTOR);
-_data.writeByte(comId);
+_data.writeInt(comId);
 _data.writeByteArray(queryMsg);
 mRemote.transact(Stub.TRANSACTION_queryMessage, _data, _reply, 0);
 _reply.readException();
@@ -218,7 +218,7 @@ static final int TRANSACTION_removeListener2 = (android.os.IBinder.FIRST_CALL_TR
 /**
 	   * Its invoker should make sure the given bufs has enough size
 	   */
-public byte[] queryMessage(byte comId, byte[] queryMsg) throws android.os.RemoteException;
+public byte[] queryMessage(int comId, byte[] queryMsg) throws android.os.RemoteException;
 /**
       * Register a callback.
       */

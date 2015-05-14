@@ -7,7 +7,7 @@ interface ICanbusService {
 	  /**
 	   * Its invoker should make sure the given bufs has enough size
 	   */	
-	  byte[] queryMessage(byte comId, in byte[] queryMsg);
+	  byte[] queryMessage(int comId, in byte[] queryMsg);
 	
     /**
       * Register a callback.
