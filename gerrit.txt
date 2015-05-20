@@ -9,6 +9,7 @@
                           //prepare content staged for the next commit
  1143  git status
  1144  git commit -m "Implement CanbusService with uart communicator"
+       git commit -m "Bluetooth ARVCP support"
  1145  git config --global user.email "tycholiu@ijidou.com"
  1147  git config --global user.name "FengLiu"
  1151  git log --stat
@@ -23,8 +24,6 @@
  1162  history
        git log gerrit/jidou_r4.4.4        //after push
        git commit --amend //merge commit
-       
-       
  
  1340  du -h --max-depth=1
  
@@ -51,3 +50,6 @@
  1394  git reset --hard e82fc1034310afc98b1f8bcc5e1f1d5afdab0d51
  1401  cat .git/MERGE_MSG 
  1411  git commit -a
+ 
+ 
+ git reset --hard e82fc1034310afc98b1f8bcc5e1f1d5afdab0d51
