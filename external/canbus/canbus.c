@@ -55,12 +55,16 @@ int speed_to_flag(int speed);
 int setup_port(int fd, int baud, int databits, int parity, int stopbits);
 int setup_port2(int fd, char *device_name);
 int wiki(int argc,char** argv);
-void hex_string_to_binary_array(char buf[], int len, char *message);
+int hex_string_to_binary_array(char buf[], int len, char *message);
+
+void write_g (char *device_name, char *message, char *delay, char *name_upd);
 
 int main(int argc, char **argv) {
 
 
-	if (!strcmp(argv[2], "write")) {
+  if (!strcmp(argv[2], "write_g")) {
+    write_g(argv[1], argv[3], argv[4], argv[5]);
+  } else if (!strcmp(argv[2], "write")) {
 		if (argc == 4) {
 			write_msg(argv[1], argv[3]);
 		} else {
@@ -117,6 +121,129 @@ void read_msg (char *device_name) {
 	}
 
 	close(fd);
+}
+
+void write_g (char *device_name, char *message, char *delay, char *name_upd) {
+  int fd;
+  int fd_upd;
+  int i, j;
+  int ch_h = 0;
+  int ch_l = 0;
+  char ch;
+  int len;
+  unsigned char *cp;
+  int total = 0;
+  int total_line = 0;
+  int delay_int = 50;
+
+  char data[128];
+
+  if (delay != NULL) {
+    delay_int = atoi(delay);
+  }
+
+  if ((fd = open(device_name, O_RDWR)) == -1) {
+    fprintf(stderr, "Canbus JNI native: failed to open %s -- %s", device_name, strerror(errno));
+    return ;
+  }
+
+  int rc = setup_port2(fd, device_name);
+
+  if (rc != 0) {
+    fprintf(stderr, "setup_port2 failed %s -- %s", device_name, strerror(errno));
+  }
+
+
+  len = hex_string_to_binary_array(data, 128, message);
+
+
+  for (i = 0; i < len; i++) {
+    printf("%X ", data[i]);
+  }
+
+  printf("\n");
+
+
+  //Do not consider partial write
+//  write(fd, msg, 4);
+  int count = -1;
+  //count = write(fd, data, len);
+  printf("write count = %d\n", count);
+
+  //bbbieee
+  char init[] = {0x62, 0x62, 0x62, 0x69, 0x65, 0x65, 0x65};
+  count = write(fd, init, 7);
+  total += 7;
+  total_line++;
+  usleep(delay_int * 1000);
+
+  //char name_upd[] = "./uart_AAA.s19";
+  char line[128];
+  char send[128];
+  char tmp[5];
+  char *pline = NULL;
+  FILE *f_upd = fopen(name_upd, "r");
+  if (f_upd == NULL) {
+    fprintf(stderr, "Canbus JNI native: failed to open %s -- %s", f_upd, strerror(errno));
+  }
+
+  /**
+   * S1 23 8960 EE03BF8DBE8AEE0190F6F75C905C90B38D26F5BE8A1C000520DDAE00862002F7 1C
+   *
+   */
+  len = 0;
+  int addr = 0;
+
+
+  while ((pline = fgets(line, 128-1, f_upd)) != NULL) {
+    if(line[0] == 'S' && line[1] == '0')
+      continue;
+    if(line[0] == 'S' && line[1] == '9')
+      continue;
+
+    printf("%s\n", line);
+    strncpy(tmp, &line[2], 2);
+    tmp[2] = '\0';
+    len = (int)strtol(tmp, NULL, 16);
+    strncpy(tmp, &line[4], 4);
+    tmp[4] = '\0';
+    addr = 0x000000000000FFFFul & strtol(tmp, NULL, 16);
+    if (addr >= 0x0000933C) {
+    //if (addr >= 0x00009080) {
+      strncpy(send, "bbbu", 4);
+      j = 4;
+
+      //strncpy(&send[4], (char *)(&addr), 2);//addr
+      for (i = 0; i < len; i++) { //send len, do not send CS
+        tmp[0] = line[2 + i*2];
+        tmp[1] = line[2 + i*2+1];
+        tmp[2] = '\0';
+        send[j++] = (char)strtoul(tmp, NULL, 16);
+      }
+
+      strncpy(&send[j], "eee", 3);
+      printf("send: ");
+      for (i = 0; i < len + 7; i++) {
+        printf("%02X ", send[i] & 0x000000FF);
+      }
+      printf("\n");
+      count = write(fd, send, len + 7);
+      total += (len + 7);
+      total_line += 1;
+      printf("Total byte = %d, total_line = %d\n", total, total_line);
+      usleep(delay_int * 1000);
+    }
+  }
+
+  ////bbbfeee
+  char reset[] = {0x62, 0x62, 0x62, 0x66, 0x65, 0x65, 0x65};
+  count = write(fd, reset, 7);
+  total += 7;
+  total_line++;
+  fclose(f_upd);
+  printf("Total byte = %d, total_line = %d\n", total, total_line);
+  usleep(delay_int * 1000);
+  close(fd);
 }
 
 void write_msg (char *device_name, char *message) {
@@ -184,80 +311,51 @@ void write_msg (char *device_name, char *message) {
 }
 
 //stuff 0 if not less than buf
-void hex_string_to_binary_array(char buf[], int buf_len, char *message) {
-	int i = 0;
-	int j = 0;
-	int len = strlen(message);
-	char *cp = &buf[0];
-	int ch_h;
-	int ch_l;
-	char ch;
-	//msg="AB"
-	//msg="01 "
-	//msg="31 "
-	//msg="31 32 33 34"
-	//msg="31 32 33 34 "
-	//msg="31 32 33 34 31 32 33 34 31 32 33 34 31 32 33 34 "
+int hex_string_to_binary_array(char buf[], int buf_len, char *message) {
+  int i = 0;
+  int j = 0;
+  int len = strlen(message);
+  char *cp = &buf[0];
+  char tmp[3];
+  int ch_h;
+  int ch_l;
+  char ch;
+  //msg="AB"
+  //msg="01 "
+  //msg="31 "
+  //msg="31 32 33 34"
+  //msg="31 32 33 34 "
+  //msg="31 32 33 34 31 32 33 34 31 32 33 34 31 32 33 34 "
 
-	for (i = 0; i < len; i++) {
-		ch = message[i];
-		if (ch == ' ') {
-			if (message[i-2] >= '0' && message[i-2] <= '9') {
-				ch_h = message[i-2] - '0';
-			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
-				ch_h = message[i-2] - 'A' + 10;
-			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
-				ch_h = message[i-2] - 'a' + 10;
-			} else {
-				ch_h = 0;
-			}
+  int idx = 0;
+  for (i = 0; i < len; i++) {
+    ch = message[i];
+    if (ch == ' ') {
+      if (idx == 0)
+        continue;
 
-			if (message[i-1] >= '0' && message[i-1] <= '9') {
-				ch_l = message[i-1] - '0';
-			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
-				ch_l = message[i-1] - 'A' + 10;
-			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
-				ch_l = message[i-1] - 'a' + 10;
-			} else {
-				ch_l = 0;
-			}
+      tmp[idx] = '\0';
 
-			cp[j++] = ch_h * 16 + ch_l;
-			if (j == buf_len) {
-				break;
-			}
-		}
-	}
+      cp[j++] = (char)strtol(tmp, NULL, 16);
+      idx = 0;
+      if (j == buf_len) {
+        break;
+      }
+    } else {
+      tmp[idx++] = ch;
+    }
+  }
 
-	if (j < buf_len) {
-		//i == len
-		if (message[i-1] != ' ') {
-			if (message[i-2] >= '0' && message[i-2] <= '9') {
-				ch_h = message[i-2] - '0';
-			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
-				ch_h = message[i-2] - 'A' + 10;
-			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
-				ch_h = message[i-2] - 'a' + 10;
-			} else {
-				ch_h = 0;
-			}
+  if (j < buf_len) {
+    //i == len
+    if (message[i-1] != ' ') {
+      if (idx > 0) {
+        cp[j++] = (char)strtol(tmp, NULL, 16);
+      }
+    }
+  }
 
-			if (message[i-1] >= '0' && message[i-1] <= '9') {
-				ch_l = message[i-1] - '0';
-			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
-				ch_l = message[i-1] - 'A' + 10;
-			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
-				ch_l = message[i-1] - 'a' + 10;
-			} else {
-				ch_l = 0;
-			}
-			cp[j++] = ch_h * 16 + ch_l;
-		}
-	}
-
-	for (; j < buf_len; j++) {
-		cp[j] = ' ';
-	}
+  return j;
 }
 
 unsigned char check_sum (str_msg *m) {

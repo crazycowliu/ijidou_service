@@ -2,23 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-void hex_string_to_binary_array();
+int hex_string_to_binary_array(char buf[], int buf_len, char *message);
 
 int main(int argc, char **argv) {
 	char buf[12];
 	int i = 0;
-	hex_string_to_binary_array(buf, 12, argv[1]);
-	for (i = 0; i < 12; i++) {
+	int j = hex_string_to_binary_array(buf, 12, argv[1]);
+	for (i = 0; i < j; i++) {
 		printf("%X ", (buf[i] & 0x000000FF));
 	}
 	printf("\n");
 }
 
-void hex_string_to_binary_array(char buf[], int buf_len, char *message) {
+
+int hex_string_to_binary_array(char buf[], int buf_len, char *message) {
 	int i = 0;
 	int j = 0;
 	int len = strlen(message);
 	char *cp = &buf[0];
+	char tmp[3];
 	int ch_h;
 	int ch_l;
 	char ch;
@@ -29,63 +31,33 @@ void hex_string_to_binary_array(char buf[], int buf_len, char *message) {
 	//msg="31 32 33 34 "
 	//msg="31 32 33 34 31 32 33 34 31 32 33 34 31 32 33 34 "
 
+	int idx = 0;
 	for (i = 0; i < len; i++) {
 		ch = message[i];
 		if (ch == ' ') {
-			if (message[i-2] >= '0' && message[i-2] <= '9') {
-				ch_h = message[i-2] - '0';
-			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
-				ch_h = message[i-2] - 'A' + 10;
-			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
-				ch_h = message[i-2] - 'a' + 10;
-			} else {
-				ch_h = 0;
-			}
+		  if (idx == 0)
+		    continue;
 
-			if (message[i-1] >= '0' && message[i-1] <= '9') {
-				ch_l = message[i-1] - '0';
-			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
-				ch_l = message[i-1] - 'A' + 10;
-			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
-				ch_l = message[i-1] - 'a' + 10;
-			} else {
-				ch_l = 0;
-			}
+		  tmp[idx] = '\0';
 
-			cp[j++] = ch_h * 16 + ch_l;
+		  cp[j++] = (char)strtol(tmp, NULL, 16);
+			idx = 0;
 			if (j == buf_len) {
 				break;
 			}
+		} else {
+		  tmp[idx++] = ch;
 		}
 	}
 
 	if (j < buf_len) {
 		//i == len
 		if (message[i-1] != ' ') {
-			if (message[i-2] >= '0' && message[i-2] <= '9') {
-				ch_h = message[i-2] - '0';
-			} else if (message[i-2] >= 'A' && message[i-2] <= 'Z') {
-				ch_h = message[i-2] - 'A' + 10;
-			} else if (message[i-2] >= 'a' && message[i-2] <= 'z') {
-				ch_h = message[i-2] - 'a' + 10;
-			} else {
-				ch_h = 0;
-			}
-
-			if (message[i-1] >= '0' && message[i-1] <= '9') {
-				ch_l = message[i-1] - '0';
-			} else if (message[i-1] >= 'A' && message[i-1] <= 'Z') {
-				ch_l = message[i-1] - 'A' + 10;
-			} else if (message[i-1] >= 'a' && message[i-1] <= 'z') {
-				ch_l = message[i-1] - 'a' + 10;
-			} else {
-				ch_l = 0;
-			}
-			cp[j++] = ch_h * 16 + ch_l;
+		  if (idx > 0) {
+		    cp[j++] = (char)strtol(tmp, NULL, 16);
+		  }
 		}
 	}
 
-	for (; j < buf_len; j++) {
-		cp[j] = ' ';
-	}
+	return j;
 }
